@@ -101,6 +101,15 @@
                 --radius: 0.5rem;
             }
         }
+        
+        /* Custom Scrollbar for Menu */
+        .custom-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -167,6 +176,21 @@
         <div class="container flex flex-col items-center justify-center gap-4 md:h-16 md:flex-row">
         </div>
     </footer>
+
+    <!-- Floating Action Button -->
+    <div id="fabContainer" class="fixed bottom-8 right-8 z-50 flex flex-col items-end hidden transition-opacity duration-300">
+        <!-- Menu -->
+        <div id="categoryMenu" class="mb-4 w-48 bg-card border border-border/40 rounded-xl shadow-xl overflow-hidden transition-all duration-300 origin-bottom-right transform scale-90 opacity-0 invisible translate-y-4 backdrop-blur-sm bg-card/95 supports-[backdrop-filter]:bg-card/80">
+            <div class="max-h-[60vh] overflow-y-auto py-1 custom-scrollbar" id="categoryMenuList">
+                <!-- Items will be injected here -->
+            </div>
+        </div>
+        
+        <!-- Button -->
+        <button id="fabBtn" class="h-12 w-12 rounded-full bg-transparent text-foreground border border-border/40 backdrop-blur-sm shadow-sm flex items-center justify-center active:scale-95 transition-all duration-300 group ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:bg-accent/10">
+            <i data-lucide="list" class="h-6 w-6 transition-transform duration-300 group-hover:rotate-180"></i>
+        </button>
+    </div>
 
     <script>
         const grid = document.getElementById('siteGrid');
@@ -289,6 +313,7 @@
             if (!hasData) {
                 grid.classList.add('hidden');
                 emptyState.classList.remove('hidden');
+                if (typeof renderFloatingMenu === 'function') renderFloatingMenu([]);
                 return;
             }
 
@@ -302,14 +327,24 @@
             }
 
             const fragment = document.createDocumentFragment();
+            const activeCategories = [];
 
-            dataToRender.forEach(category => {
+            dataToRender.forEach((category, index) => {
                 if (!category.sites || category.sites.length === 0) return;
 
                 const categorySection = document.createElement('section');
-                categorySection.className = 'w-full';
+                categorySection.className = 'w-full scroll-mt-24';
                 // Use CSS containment for performance
                 categorySection.style.contain = 'content';
+                
+                const sectionId = `cat-${index}`;
+                categorySection.id = sectionId;
+                
+                if (category.name !== '默认分类' && category.name !== '搜索结果') {
+                     activeCategories.push({ name: category.name, id: sectionId });
+                } else if (dataToRender.length > 1) {
+                     activeCategories.push({ name: category.name, id: sectionId });
+                }
 
                 if (category.name !== '默认分类' && category.name !== '搜索结果') {
                      categorySection.innerHTML = `<h2 class="text-sm font-medium text-muted-foreground mt-0 mb-4 tracking-wider">${category.name}</h2>`;
@@ -332,6 +367,7 @@
             grid.appendChild(fragment);
             
             lucide.createIcons();
+            if (typeof renderFloatingMenu === 'function') renderFloatingMenu(activeCategories);
         }
 
         function createCard(site) {
@@ -402,6 +438,56 @@
             
             renderSites(filteredSites);
         });
+
+        // Floating Menu Logic
+        const fabContainer = document.getElementById('fabContainer');
+        const fabBtn = document.getElementById('fabBtn');
+        const categoryMenu = document.getElementById('categoryMenu');
+        const categoryMenuList = document.getElementById('categoryMenuList');
+        let isMenuOpen = false;
+
+        fabBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(); });
+        document.addEventListener('click', (e) => {
+            if (isMenuOpen && !categoryMenu.contains(e.target) && !fabBtn.contains(e.target)) closeMenu();
+        });
+
+        function toggleMenu(show) {
+            isMenuOpen = show !== undefined ? show : !isMenuOpen;
+            const classes = ['scale-100', 'opacity-100', 'visible', 'translate-y-0'];
+            if (isMenuOpen) {
+                categoryMenu.classList.remove('scale-90', 'opacity-0', 'invisible', 'translate-y-4');
+                categoryMenu.classList.add(...classes);
+                fabBtn.querySelector('svg').classList.add('rotate-90');
+            } else {
+                categoryMenu.classList.add('scale-90', 'opacity-0', 'invisible', 'translate-y-4');
+                categoryMenu.classList.remove(...classes);
+                fabBtn.querySelector('svg').classList.remove('rotate-90');
+            }
+        }
+        const closeMenu = () => toggleMenu(false);
+
+        function renderFloatingMenu(categories) {
+            if (!categories?.length) return fabContainer.classList.add('hidden');
+            fabContainer.classList.remove('hidden');
+
+            const itemClass = 'px-4 py-2.5 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors border-l-2 border-transparent hover:border-primary truncate select-none';
+            
+            categoryMenuList.innerHTML = categories.map(cat => 
+                `<div class="${itemClass}" onclick="scrollToSection('${cat.id}')">${cat.name}</div>`
+            ).join('') + (categories.length > 3 ? `
+                <div class="h-px bg-border/50 my-1 mx-2"></div>
+                <div class="px-4 py-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer text-center transition-colors" onclick="scrollToSection()">
+                    <span class="flex items-center justify-center gap-1"><i data-lucide="arrow-up" class="h-3 w-3"></i> 回到顶部</span>
+                </div>` : '');
+            
+            lucide.createIcons({ root: categoryMenuList });
+        }
+
+        function scrollToSection(id) {
+            const top = id ? document.getElementById(id)?.getBoundingClientRect().top + window.pageYOffset - 80 : 0;
+            window.scrollTo({ top, behavior: 'smooth' });
+            closeMenu();
+        }
     </script>
 </body>
 </html>
