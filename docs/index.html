@@ -334,8 +334,6 @@
 
                 const categorySection = document.createElement('section');
                 categorySection.className = 'w-full scroll-mt-24';
-                // Use CSS containment for performance
-                categorySection.style.contain = 'content';
                 
                 const sectionId = `cat-${index}`;
                 categorySection.id = sectionId;
@@ -405,7 +403,7 @@
             card.href = site.url;
             card.target = isExternal ? "_blank" : "_self";
             card.className = "group relative flex items-center gap-3 p-3 rounded-xl border border-border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/50 no-underline select-none text-left " +
-                             "before:content-[attr(data-tooltip)] before:absolute before:bottom-full before:left-1/2 before:-translate-x-1/2 before:mb-2 before:px-3 before:py-1.5 before:bg-popover before:text-popover-foreground before:text-sm before:rounded-md before:shadow-lg before:whitespace-nowrap before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-200 before:pointer-events-none before:z-50";
+                             "before:content-[attr(data-tooltip)] before:absolute before:bottom-full before:left-1/2 before:-translate-x-1/2 before:mb-2 before:px-3 before:py-1.5 before:bg-popover before:text-popover-foreground before:text-sm before:rounded-md before:shadow-lg before:whitespace-nowrap before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-200 before:pointer-events-none before:z-[60]";
              
              card.innerHTML = `
                  <div class="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden border border-border/50">
