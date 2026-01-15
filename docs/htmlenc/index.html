@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HTML文本十进制转码</title>
+
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --btn-bg: #eef0f3;
+      --btn-text: #111827;
+      --btn-hover: #e2e5ea;
+      --text: #111827;
+      --muted: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    h1 {
+      font-size: 20px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--muted);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 130px;
+      resize: vertical;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: #c7ccd6;
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+    }
+
+    button:hover {
+      background: var(--btn-hover);
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 20px;
+    }
+
+    @media (max-width: 600px) {
+      textarea {
+        min-height: 110px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>HTML文本十进制转码 / 解码</h1>
+
+    <!-- 普通文本 -->
+    <div class="card">
+      <div class="card-title">普通文本</div>
+      <textarea id="plainText" placeholder="请输入普通文本，例如：你好 👋 world"></textarea>
+      <div class="actions">
+        <button onclick="pasteText('plainText')">粘贴</button>
+        <button onclick="copyText('plainText')">复制</button>
+        <button onclick="clearText('plainText')">清空</button>
+      </div>
+    </div>
+
+    <!-- 实体编码 -->
+    <div class="card">
+      <div class="card-title">编码</div>
+      <textarea id="entityText"></textarea>
+      <div class="actions">
+        <button onclick="pasteText('entityText')">粘贴</button>
+        <button onclick="copyText('entityText')">复制</button>
+        <button onclick="clearText('entityText')">清空</button>
+      </div>
+    </div>
+
+    <footer>
+      所有转换都在浏览器本地完成
+    </footer>
+  </div>
+
+  <script>
+    const plainText = document.getElementById("plainText");
+    const entityText = document.getElementById("entityText");
+
+    function encodeToEntity(text) {
+      let out = "";
+      for (const ch of text) {
+        out += "&#" + ch.codePointAt(0) + ";";
+      }
+      return out;
+    }
+
+    function decodeFromEntity(text) {
+      const ta = document.createElement("textarea");
+      ta.innerHTML = text;
+      return ta.value;
+    }
+
+    let lockA = false;
+    let lockB = false;
+
+    plainText.addEventListener("input", () => {
+      if (lockB) return;
+      lockA = true;
+      entityText.value = encodeToEntity(plainText.value);
+      lockA = false;
+    });
+
+    entityText.addEventListener("input", () => {
+      if (lockA) return;
+      lockB = true;
+      plainText.value = decodeFromEntity(entityText.value);
+      lockB = false;
+    });
+
+    async function copyText(id) {
+      const el = document.getElementById(id);
+      await navigator.clipboard.writeText(el.value);
+    }
+
+    async function pasteText(id) {
+      const text = await navigator.clipboard.readText();
+      const el = document.getElementById(id);
+      el.value = text;
+      el.dispatchEvent(new Event("input"));
+    }
+
+    function clearText(id) {
+      const el = document.getElementById(id);
+      el.value = "";
+      el.dispatchEvent(new Event("input"));
+    }
+  </script>
+</body>
+</html>

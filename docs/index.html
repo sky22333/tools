@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工具导航站</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="preconnect" href="https://www.google.com">
+    <link rel="preconnect" href="https://icons.duckduckgo.com">
+    <link rel="preconnect" href="https://unavatar.io">
+    <link rel="preload" href="sites.txt" as="fetch" crossorigin>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                container: {
+                    center: true,
+                    padding: "2rem",
+                    screens: {
+                        "2xl": "1400px",
+                    },
+                },
+                extend: {
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "hsl(var(--primary))",
+                            foreground: "hsl(var(--primary-foreground))",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(var(--secondary))",
+                            foreground: "hsl(var(--secondary-foreground))",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(var(--destructive))",
+                            foreground: "hsl(var(--destructive-foreground))",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(var(--accent))",
+                            foreground: "hsl(var(--accent-foreground))",
+                        },
+                        popover: {
+                            DEFAULT: "hsl(var(--popover))",
+                            foreground: "hsl(var(--popover-foreground))",
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))",
+                        },
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)",
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            :root {
+                --background: 0 0% 100%;
+                --foreground: 240 10% 3.9%;
+                --card: 0 0% 100%;
+                --card-foreground: 240 10% 3.9%;
+                --popover: 0 0% 100%;
+                --popover-foreground: 240 10% 3.9%;
+                --primary: 240 5.9% 10%;
+                --primary-foreground: 0 0% 98%;
+                --secondary: 240 4.8% 95.9%;
+                --secondary-foreground: 240 5.9% 10%;
+                --muted: 240 4.8% 95.9%;
+                --muted-foreground: 240 3.8% 46.1%;
+                --accent: 240 4.8% 95.9%;
+                --accent-foreground: 240 5.9% 10%;
+                --destructive: 0 84.2% 60.2%;
+                --destructive-foreground: 0 0% 98%;
+                --border: 240 5.9% 90%;
+                --input: 240 5.9% 90%;
+                --ring: 240 5.9% 10%;
+                --radius: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+        <div class="container mx-auto max-w-6xl px-4 md:px-6 flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
+            <div class="flex gap-2 items-center font-bold text-xl">
+                <i data-lucide="layout-grid" class="h-6 w-6"></i>
+                <span>Nav</span>
+            </div>
+            <div class="flex-1 flex justify-end">
+                <nav class="flex items-center space-x-1">
+                    <a href="https://github.com/sky22333/tools" target="_blank" rel="noreferrer" class="w-9 h-9 flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
+                        <i data-lucide="github" class="h-5 w-5"></i>
+                        <span class="sr-only">GitHub</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto max-w-6xl px-4 md:px-6 py-8 flex-1">
+        <!-- Hero & Search -->
+        <div class="flex flex-col items-center text-center gap-4 mb-10 animate-fade-in-up">
+            <h1 class="text-3xl font-extrabold leading-tight tracking-tighter md:text-4xl">
+                工具导航站
+            </h1>
+            <p class="max-w-[700px] text-lg text-muted-foreground">
+                收集常用的开发工具与优质网站，提升工作效率。
+            </p>
+            
+            <div class="w-full max-w-sm relative mt-4">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"></i>
+                <input type="text" id="searchInput" placeholder="搜索网站..." class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+            </div>
+        </div>
+
+        <!-- Sites Container -->
+        <div id="siteGrid" class="space-y-8">
+             <!-- Skeleton Loading -->
+             <div class="space-y-8 animate-pulse">
+                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                     <div class="h-20 rounded-xl bg-muted/50"></div>
+                     <div class="h-20 rounded-xl bg-muted/50"></div>
+                     <div class="h-20 rounded-xl bg-muted/50"></div>
+                     <div class="h-20 rounded-xl bg-muted/50"></div>
+                     <div class="h-20 rounded-xl bg-muted/50"></div>
+                     <div class="h-20 rounded-xl bg-muted/50"></div>
+                 </div>
+             </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden flex flex-col items-center justify-center py-12 text-center">
+            <i data-lucide="inbox" class="h-12 w-12 text-muted-foreground mb-4"></i>
+            <h3 class="text-lg font-semibold">没有找到相关网站</h3>
+            <p class="text-muted-foreground">尝试更换搜索关键词</p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-border/40 py-6 md:px-8 md:py-0">
+        <div class="container flex flex-col items-center justify-center gap-4 md:h-16 md:flex-row">
+        </div>
+    </footer>
+
+    <script>
+        const grid = document.getElementById('siteGrid');
+        const searchInput = document.getElementById('searchInput');
+        const emptyState = document.getElementById('emptyState');
+        let allSites = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            fetchSites();
+        });
+
+        async function fetchSites() {
+            try {
+                const response = await fetch('sites.txt');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const text = await response.text();
+                parseSites(text);
+            } catch (error) {
+                console.error('Error fetching sites:', error);
+                grid.innerHTML = `
+                    <div class="col-span-full text-center text-destructive p-4 border border-destructive/20 rounded-lg bg-destructive/10">
+                        <p class="font-bold">无法加载数据文件 (sites.txt)</p>
+                        <p class="text-sm mt-1">请确保 sites.txt 存在且可通过 HTTP 访问 (由于浏览器安全策略，直接双击 HTML 可能无法读取本地文件)。</p>
+                    </div>
+                `;
+            }
+        }
+
+        function parseSites(text) {
+            allSites = [];
+            let currentCategory = { name: '默认分类', sites: [] };
+
+            const lines = text.split('\n').map(line => line.trim());
+
+            lines.forEach(line => {
+                if (!line) return;
+
+                if (line.startsWith('##')) {
+                    if (currentCategory.sites.length > 0) {
+                        allSites.push(currentCategory);
+                    }
+                    const categoryName = line.replace(/^##\s*/, '').trim();
+                    currentCategory = { name: categoryName, sites: [] };
+                    return;
+                }
+
+                if (line.startsWith('#')) return;
+
+                let parts = line.split(/,|\|/);
+                if (parts.length < 2) {
+                    const spaceIndex = line.indexOf(' ');
+                    if (spaceIndex > -1) {
+                        parts = [line.substring(0, spaceIndex), line.substring(spaceIndex + 1)];
+                    } else {
+                        return;
+                    }
+                }
+                
+                const name = parts[0].trim();
+                let url = parts[1].trim();
+                
+                const isExternal = url.startsWith('http://') || url.startsWith('https://');
+                const isRelative = url.startsWith('./') || url.startsWith('/') || (url.indexOf('/') !== -1 && url.indexOf(':') === -1) || url.indexOf('.') === -1;
+                
+                if (!isExternal && !isRelative) {
+                    url = 'https://' + url;
+                }
+
+                currentCategory.sites.push({ name, url });
+            });
+
+            if (currentCategory.sites.length > 0) {
+                allSites.push(currentCategory);
+            }
+
+            renderSites(allSites);
+        }
+
+        function generateAvatar(text) {
+            const textColor = '#000000'; // Black text
+            const letter = Array.from(text)[0] || '?';
+            
+            const svg = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+                <text x="50%" y="50%" dy=".35em" fill="${textColor}" font-family="Arial, sans-serif" font-size="32" font-weight="bold" text-anchor="middle">${letter}</text>
+            </svg>`;
+            
+            return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+        }
+
+        function handleFaviconError(img) {
+            const domain = img.dataset.domain;
+            const name = img.dataset.name;
+            const retryCount = parseInt(img.dataset.retry || '0');
+            
+            // Fallback chain: Google -> DuckDuckGo -> Unavatar -> Local SVG
+            const fallbacks = [
+                `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+                `https://unavatar.io/${domain}`
+            ];
+
+            if (retryCount < fallbacks.length) {
+                img.src = fallbacks[retryCount];
+                img.dataset.retry = retryCount + 1;
+            } else {
+                img.removeAttribute('onerror');
+                img.src = generateAvatar(name);
+                img.classList.remove('h-5', 'w-5', 'object-contain');
+                img.classList.add('h-full', 'w-full', 'object-cover');
+            }
+        }
+
+        function renderSites(categories) {
+            grid.innerHTML = '';
+            const hasData = categories.some(cat => cat.sites && cat.sites.length > 0) || (Array.isArray(categories) && categories.length > 0 && !categories[0].sites);
+            
+            if (!hasData) {
+                grid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            grid.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+
+            let dataToRender = categories;
+            
+            if (Array.isArray(categories) && categories.length > 0 && !categories[0].sites) {
+                 dataToRender = [{ name: '搜索结果', sites: categories }];
+            }
+
+            const fragment = document.createDocumentFragment();
+
+            dataToRender.forEach(category => {
+                if (!category.sites || category.sites.length === 0) return;
+
+                const categorySection = document.createElement('section');
+                categorySection.className = 'w-full';
+                // Use CSS containment for performance
+                categorySection.style.contain = 'content';
+
+                if (category.name !== '默认分类' && category.name !== '搜索结果') {
+                     categorySection.innerHTML = `<h2 class="text-sm font-medium text-muted-foreground mt-0 mb-4 tracking-wider">${category.name}</h2>`;
+                } else if (dataToRender.length > 1) {
+                     categorySection.innerHTML = `<h2 class="text-sm font-medium text-muted-foreground mt-0 mb-4 tracking-wider">${category.name}</h2>`;
+                }
+
+                const cardsContainer = document.createElement('div');
+                cardsContainer.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3';
+
+                category.sites.forEach(site => {
+                    const card = createCard(site);
+                    cardsContainer.appendChild(card);
+                });
+
+                categorySection.appendChild(cardsContainer);
+                fragment.appendChild(categorySection);
+            });
+            
+            grid.appendChild(fragment);
+            
+            lucide.createIcons();
+        }
+
+        function createCard(site) {
+             const isExternal = site.url.startsWith('http');
+             
+             let displayUrl = '';
+             let iconHtml = '';
+             
+             const avatarUrl = generateAvatar(site.name);
+             
+             if (isExternal) {
+                 try {
+                    displayUrl = new URL(site.url).hostname;
+                } catch (e) {
+                    displayUrl = site.url;
+                }
+                const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(site.url)}&sz=64`;
+                
+                iconHtml = `
+                    <img src="${faviconUrl}" 
+                         data-domain="${displayUrl}" 
+                          data-name="${site.name}"
+                          alt="${site.name}" 
+                          loading="lazy" 
+                          class="h-5 w-5 object-contain transition-transform duration-500 group-hover:scale-110" 
+                          onerror="handleFaviconError(this)">
+                 `;
+             } else {
+                 displayUrl = site.url;
+                 iconHtml = `<img src="${avatarUrl}" alt="${site.name}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">`;
+             }
+
+             const card = document.createElement('a');
+            card.dataset.tooltip = site.name;
+            card.href = site.url;
+            card.target = isExternal ? "_blank" : "_self";
+            card.className = "group relative flex items-center gap-3 p-3 rounded-xl border border-border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/50 no-underline select-none text-left " +
+                             "before:content-[attr(data-tooltip)] before:absolute before:bottom-full before:left-1/2 before:-translate-x-1/2 before:mb-2 before:px-3 before:py-1.5 before:bg-popover before:text-popover-foreground before:text-sm before:rounded-md before:shadow-lg before:whitespace-nowrap before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-200 before:pointer-events-none before:z-50";
+             
+             card.innerHTML = `
+                 <div class="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden border border-border/50">
+                     ${iconHtml}
+                 </div>
+                 <div class="flex flex-col min-w-0 flex-1">
+                     <span class="text-sm font-semibold truncate text-foreground/90 group-hover:text-primary transition-colors">${site.name}</span>
+                     <span class="text-xs text-muted-foreground truncate opacity-70">${displayUrl}</span>
+                 </div>
+             `;
+             return card;
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim().toLowerCase();
+            
+            if (!query) {
+                renderSites(allSites);
+                return;
+            }
+            
+            let filteredSites = [];
+            allSites.forEach(cat => {
+                const matched = cat.sites.filter(site => 
+                    site.name.toLowerCase().includes(query) || 
+                    site.url.toLowerCase().includes(query)
+                );
+                filteredSites = filteredSites.concat(matched);
+            });
+            
+            renderSites(filteredSites);
+        });
+    </script>
+</body>
+</html>

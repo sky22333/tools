@@ -1,0 +1,140 @@
+## 自己的工具
+安卓开发工具, ./android
+代码编辑器, ./code
+ip配置器, ./ip
+md在线编辑器, ./md
+哪吒配置生成器, ./nezha
+HTML文本十进制转码, ./htmlenc
+Github加速, https://yishijie.gitlab.io/ziyuan/
+在线m3u8播放器, https://blog.52013120.xyz/zhibo
+VIP视频在线播放, https://blog.52013120.xyz/video
+
+## 开发社区
+GitHub, https://github.com
+Stack Overflow, https://stackoverflow.com
+MDN Web Docs, https://developer.mozilla.org
+全球技术问答社区, https://stackoverflow.com/
+
+## AI网页
+ChatGPT, https://chatgpt.com/
+Claude, https://claude.ai/new
+Gemini, https://gemini.google.com/app
+Grok-Al, https://grok.com/chat
+DeepSeek, https://chat.deepseek.com/
+豆包, https://www.doubao.com/chat/
+前端Al, https://bolt.new/
+前端AI设计, https://app.visily.ai/projects?type=team
+AI前端, https://v0.dev/
+Readdy前端AI, https://readdy.ai/home
+Manus, https://manus.im/app
+Lovable, https://lovable.dev/?via=typescript
+Stitch-移动app设计, https://stitch.withgoogle.com/
+
+## AI编辑器
+字节Trae, https://www.trae.ai
+Cursor, https://cursor.com
+Claude Code, https://claude.ai/code
+阿里通义灵码, https://lingma.aliyun.com/
+Augment Code, https://www.augmentcode.com/
+亚马逊Kiro, https://kiro.dev/
+腾讯CodeBuddy, https://www.codebuddy.ai
+谷歌antigravity, https://antigravity.google/
+
+## 前端工具
+Tailwind CSS, https://tailwindcss.com
+Shadcn UI, https://ui.shadcn.com
+JSON Formatter, https://jsonformatter.org
+RegExr, https://regexr.com
+
+## 设计资源
+Figma, https://figma.com
+Excalidraw, https://excalidraw.com
+Canva, https://www.canva.com
+Dribbble, https://dribbble.com
+LottieFiles, https://lottiefiles.com
+IconFont, https://www.iconfont.cn
+Unsplash, https://unsplash.com
+
+## 工具类
+前端在线工具, https://www.strerr.com/cn/tools.html
+在线vscode, https://vscode.dev/?vscode-lang=zh-cn
+在线绘图, https://excalidraw.com/
+临时匿名邮箱 (vmail), https://vmail.dev/
+临时匿名邮箱 (temp-mail), https://temp-mail.org/zh/
+临时Gmail邮箱, https://22.do/zh/fake-gmail-generator
+阅后即焚发信, https://www.sixin.cc/
+各大软件快捷键查询, https://hotkeycheatsheet.com/zh
+直播工具, https://hao.yuenos.com/
+在线制作流光卡片, https://fireflycard.shushiai.com/
+免登录分享视频 (Streamable), https://streamable.com
+免登录分享视频 (Vidplay), https://vidplay.io
+匿名文件快传 (File.io), https://www.file.io/
+匿名文件快传 (File.kiwi), https://file.kiwi/
+匿名文件快传 (Wormhole), https://wormhole.app/
+匿名文件快传 (Filebin), https://filebin.net
+文件分享 (Tmp.link), https://www.tmp.link/
+在线临时记事本, https://cn.anotepad.com/
+互联网存档, https://archive.org/
+js代码混淆, https://obfuscator.io/
+运维项目合集, https://github.com/eryajf/awesome-ops
+代码片段分享 (PrivateBin), https://privatebin.support-tools.com
+代码片段分享 (PastBin), https://pastbin.cc/
+代码分享 (PasteOrg), https://paste.org.cn
+匿名托管脚本 (Termbin), https://termbin.com
+匿名托管脚本 (0x0), https://0x0.st
+免费短链 (PBS), https://pbs.ink
+免费短链 (Goo), https://goo.su
+免费短链 (DB), https://db.onl
+免费短链 (Is.gd), https://is.gd
+开源短链 (Sink), https://sink.cool/dashboard/links
+软件搜索和替代推荐, https://alternativeto.net
+免费邮件api, https://resend.com
+在线渲染GitHub (Githack), https://raw.githack.com
+在线渲染GitHub (Preview), https://htmlpreview.github.io
+Tinypng图片工具, https://tinypng.com
+
+## 网络工具
+快速查看位置 (Cloudflare), https://www.cloudflare.com/cdn-cgi/trace
+快速查看位置 (Visa), https://www.visa.cn/cdn-cgi/trace
+IP质量和位置 (IPIP), https://ipip.la
+IP质量和位置 (IPLark), https://iplark.com
+IP位置 (Ping0), https://ping0.cc/geo
+查询IPV6, https://ipw.cn
+扫描UDP端口, https://www.ipvoid.com/udp-port-scan
+在线ping, https://www.itdog.cn/tcping
+IP分流查询, https://ip.skk.moe
+国内IP速查, https://ip.cn
+
+## 域名和礼品卡
+GoDaddy, https://www.godaddy.com/zh-sg/domains
+Spaceship, https://www.spaceship.com/zh/domains
+海外礼品卡购买, https://shop.pockyt.io/pc/brands/all
+
+## 素材类工具
+免费图标下载, https://igoutu.cn/
+网站图标代码, https://fontawesome.com/search
+Youtube视频转文字, https://www.videotoblog.ai/
+图标LOGO, https://www.aigei.com/
+艺术渐变网页背景, https://www.color4bg.com/zh-hans/
+icon图标转换, https://www.aconvert.com/cn/icon/png-to-ico/
+免费LOGO图标设计, https://ray.so/icon
+Youtube视频解析下载, https://ytshorts.savetube.me/
+全平台视频下载, https://www.datatool.vip/
+一键AI抠图, https://www.remove.bg/zh
+在线编辑图片, https://photokit.com/?lang=zh
+在线图片压缩, https://www.iloveimg.com/zh-cn/compress-image/compress-png
+图片工具箱, https://www.iloveimg.com/zh-cn
+emo表情, https://www.emojiall.com/zh-hans/sub-categories/J2
+免费图床, https://lvse.eu.org/
+免费云资源汇总, https://gist.github.com/imba-tjd/d73258f0817255dbe77d64d40d985e76
+
+## APK软件下载
+APKMirror, https://www.apkmirror.com
+APKPure, https://apkpure.com/cn
+
+## OpenWrt
+官方OpenWrt固件, https://firmware-selector.openwrt.org/
+ImmortalWrt固件, https://firmware-selector.immortalwrt.org
+ImmortalWrt软件包, https://downloads.immortalwrt.org/releases/24.10.4/packages/x86_64/luci/index.json
+OpenWrt硬件支持, https://openwrt.org/zh/toh/start
+第三方OpenWrt固件, https://openwrt.ai/

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线代码编辑器</title>
+    <link rel="icon" href="./favicon.ico">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #1e1e1e;
+            font-family: Arial, sans-serif;
+        }
+        #container {
+            width: 98%;
+            height: 95%;
+            border: 1px solid #333;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        #floating-panel {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(30, 30, 30, 0.8);
+            border: 0px solid #333;
+            border-radius: 2px;
+            padding: 6px;
+            z-index: 1000;
+        }
+        select {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 5px;
+            margin: 5px;
+        }
+        /* 手机设备自适应 */
+        @media (max-width: 768px) {
+            #container {
+                width: 100%;
+                height: 95%;
+            }
+        }
+        .monaco-editor .line-numbers {
+            width: 30px !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="container"></div>
+
+<div id="floating-panel">
+    <select id="language-select">
+        <option value="shell">Shell</option>
+        <option value="javascript">JavaScript</option>
+        <option value="python">Python</option>
+        <option value="java">Java</option>
+        <option value="cpp">C++</option>
+        <option value="typescript">TypeScript</option>
+        <option value="json">JSON</option>
+        <option value="yaml">YAML</option>
+        <option value="html">HTML</option>
+        <option value="css">CSS</option>
+        <option value="php">PHP</option>
+        <option value="ruby">Ruby</option>
+        <option value="go">Go</option>
+        <option value="rust">Rust</option>
+        <option value="swift">Swift</option>
+        <option value="kotlin">Kotlin</option>
+    </select>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs/loader.min.js"></script>
+<script>
+    require.config({
+        paths: { 
+            'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs'
+        },
+        'vs/nls': {
+            availableLanguages: {
+                '*': 'zh-cn'
+            }
+        }
+    });
+
+    require(['vs/editor/editor.main'], function() {
+        var editor = monaco.editor.create(document.getElementById('container'), {
+            value: `# blog.52013120.xyz\necho "Hello, world!`,
+            language: 'shell',
+            theme: 'vs-dark',
+            automaticLayout: true,
+            lineNumbers: 'on',
+            lineNumbersMinChars: 3,
+            roundedSelection: false,
+            scrollBeyondLastLine: false,
+            readOnly: false,
+            fontSize: 16,
+            wordWrap: 'on',
+            minimap: { enabled: false },
+            matchBrackets: 'always',
+            find: {
+                addExtraSpaceOnTop: false,
+                highlightSearchTerms: true,
+            },
+        });
+
+        document.getElementById('language-select').addEventListener('change', function() {
+            const selectedLanguage = this.value;
+            monaco.editor.setModelLanguage(editor.getModel(), selectedLanguage);
+        });
+
+        function openSearch() {
+            editor.focus();
+            setTimeout(function() {
+                editor.getAction('actions.find').run();
+            }, 100);
+        }
+
+        monaco.editor.defineTheme('vs-dark', {
+            base: 'vs-dark',
+            inherit: true,
+            rules: [
+                { token: '', foreground: 'D4D4D4', background: '1E1E1E' },
+                { token: 'string', foreground: 'CE9178' },
+                { token: 'keyword', foreground: '569CD6' },
+                { token: 'number', foreground: 'B5CEA8' },
+                { token: 'comment', foreground: '6A9955' },
+                { token: 'findMatchHighlight', background: '515C6A', foreground: 'D4D4D4' },
+            ],
+            colors: {
+                'editor.background': '#1E1E1E',
+                'editor.findMatchHighlightBackground': '#264F78',
+                'editor.lineHighlightBackground': '#2C2C2C',
+                'editorCursor.foreground': '#A7A7A7',
+                'editorLineNumber.foreground': '#858585',
+            }
+        });
+
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, openSearch);
+    });
+</script>
+
+</body>
+</html>
