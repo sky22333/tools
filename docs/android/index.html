@@ -581,7 +581,7 @@
         }
 
         function regeneratePass() {
-            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
             let pass = "";
             for (let i = 0; i < 20; i++) {
                 pass += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -685,7 +685,7 @@
                     [cert],
                     storePass,
                     {
-                        algorithm: '3des', // Android supports 3DES/RC2 for older compat, or AES. Forge defaults are usually safe.
+                        algorithm: 'aes128', // Use AES-128 for better compatibility with modern Java
                         friendlyName: alias,
                         generateLocalKeyId: true
                     }
