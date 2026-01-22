@@ -834,9 +834,20 @@
                     const audioCtx = new AudioContext();
                     const ab = await (await fetch(url)).arrayBuffer();
                     const audioBuffer = await audioCtx.decodeAudioData(ab);
+                    await audioCtx.close();
 
-                    const width = video.videoWidth % 2 === 0 ? video.videoWidth : video.videoWidth - 1;
-                    const height = video.videoHeight % 2 === 0 ? video.videoHeight : video.videoHeight - 1;
+                    // Resolution Logic
+                    let targetWidth, targetHeight;
+                    if (config.resolution === '4k') { targetWidth = 3840; targetHeight = 2160; }
+                    else if (config.resolution === '1080p') { targetWidth = 1920; targetHeight = 1080; }
+                    else if (config.resolution === '720p') { targetWidth = 1280; targetHeight = 720; }
+                    else { targetWidth = video.videoWidth; targetHeight = video.videoHeight; }
+
+                    // Ensure even dimensions for codecs
+                    targetWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
+                    targetHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
+                    
+                    const targetFps = parseInt(config.frameRate) || 30;
                     
                     // --- Worker Code ---
                     const workerCode = `
@@ -940,7 +951,7 @@
 
                             if (type === 'init') {
                                 try {
-                                    const { width, height, fileHandle, audioConfig } = data;
+                                    const { width, height, fps, fileHandle, audioConfig } = data;
                                     
                                     // 1. Setup Output Target (Streaming IO)
                                     let target;
@@ -969,7 +980,7 @@
                                         codec: 'avc1.4d0033',
                                         width, height,
                                         bitrate: 10_000_000,
-                                        framerate: 30
+                                        framerate: fps
                                     });
 
                                     audioEncoder = new AudioEncoder({
@@ -1092,7 +1103,9 @@
                     worker.postMessage({
                         type: 'init',
                         data: {
-                            width, height,
+                            width: targetWidth, 
+                            height: targetHeight,
+                            fps: targetFps,
                             fileHandle: fileHandle,
                             audioConfig: { numberOfChannels: audioBuffer.numberOfChannels, sampleRate: audioBuffer.sampleRate }
                         }
@@ -1171,7 +1184,7 @@
                     };
 
                     for (let i = 0; i < totalFrames; i++) {
-                        const timeRelativeToStart = i / fps;
+                        const timeRelativeToStart = i / targetFps;
                         const actualTime = trimStart + timeRelativeToStart;
 
                         video.currentTime = actualTime;
@@ -1211,7 +1224,7 @@
                                 frame,
                                 transform: { scale, x, y },
                                 timestamp: timeRelativeToStart * 1e6,
-                                keyFrame: i % 30 === 0
+                                keyFrame: i % targetFps === 0
                             }
                         }, [frame]); // Transfer Frame
 
