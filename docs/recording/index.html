@@ -790,32 +790,20 @@
 
                     const chunks = [];
                     recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-                    recorder.onstop = async () => {
+                    recorder.onstop = () => {
                         const blob = new Blob(chunks, { type: 'video/webm' });
                         const url = URL.createObjectURL(blob);
                         const newRec = {
                             id: Date.now(),
-                            title: `我的录屏 ${Date.now()}`, // Use timestamp to avoid length dependency
+                            title: `我的录屏 ${recordings.length + 1}`,
                             slug: `/recordings/untitled-${Date.now().toString().slice(-4)}`,
                             date: new Date().toLocaleDateString(),
                             duration: recordingDuration,
                             status: 'draft',
-                            url: url, // Ephemeral URL
-                            blob: blob, // Persistent Blob
+                            url: url,
+                            blob: blob,
                             notes: ''
                         };
-
-                        try {
-                            // Persist to IndexedDB
-                            // We clone the object to avoid storing the ephemeral URL if we wanted, 
-                            // but for simplicity we store it and ignore it on load.
-                            // However, we MUST store the blob.
-                            await dbHelper.add(newRec);
-                        } catch (err) {
-                            console.error("Failed to save recording to DB:", err);
-                            alert("保存录屏失败，请检查磁盘空间");
-                        }
-
                         setRecordings(prev => [newRec, ...prev]);
                         setActiveRecording(newRec);
                         setIsRecording(false);
