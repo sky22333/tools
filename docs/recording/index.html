@@ -428,6 +428,9 @@
 
             // Dragging Logic
             const handleTimelineMouseDown = (e, type = null) => {
+                // Support Touch Events
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                
                 if (type) {
                     e.stopPropagation();
                     draggingTrimRef.current = type;
@@ -440,8 +443,10 @@
             
             const handleTimelineMove = (e) => {
                 if (!timelineRef.current) return;
+                
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const rect = timelineRef.current.getBoundingClientRect();
-                const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
                 const time = pos * duration;
 
                 if (draggingTrimRef.current) {
@@ -472,9 +477,13 @@
             useEffect(() => {
                 window.addEventListener('mousemove', handleTimelineMove);
                 window.addEventListener('mouseup', handleTimelineMouseUp);
+                window.addEventListener('touchmove', handleTimelineMove, { passive: false });
+                window.addEventListener('touchend', handleTimelineMouseUp);
                 return () => {
                     window.removeEventListener('mousemove', handleTimelineMove);
                     window.removeEventListener('mouseup', handleTimelineMouseUp);
+                    window.removeEventListener('touchmove', handleTimelineMove);
+                    window.removeEventListener('touchend', handleTimelineMouseUp);
                 };
             }, [duration, keyframes]);
 
@@ -536,6 +545,7 @@
                                 <div className="bg-white p-4 rounded-xl border border-slate-200 h-28 relative select-none shrink-0 dark:bg-slate-800 dark:border-slate-700"
                                      ref={timelineRef}
                                      onMouseDown={handleTimelineMouseDown}
+                                     onTouchStart={handleTimelineMouseDown}
                                      >
                                     <div className="absolute inset-x-6 top-1/2 h-2 bg-slate-100 rounded-full overflow-visible dark:bg-slate-700">
                                         {/* Trim Masks */}
@@ -547,6 +557,7 @@
                                              className="absolute top-1/2 h-8 w-4 bg-white border border-slate-300 rounded-l-md cursor-ew-resize z-30 flex items-center justify-center group hover:border-blue-500 transition-colors dark:bg-slate-700 dark:border-slate-600"
                                              style={{ left: `${(trim.start/duration)*100}%`, transform: 'translate(-100%, -50%)' }}
                                              onMouseDown={(e) => handleTimelineMouseDown(e, 'start')}
+                                             onTouchStart={(e) => handleTimelineMouseDown(e, 'start')}
                                              title={`开始: ${formatTime(trim.start)}`}
                                         >
                                             <div className="w-1 h-3 bg-slate-300 rounded-full group-hover:bg-blue-500 dark:bg-slate-500"></div>
@@ -555,6 +566,7 @@
                                              className="absolute top-1/2 h-8 w-4 bg-white border border-slate-300 rounded-r-md cursor-ew-resize z-30 flex items-center justify-center group hover:border-blue-500 transition-colors dark:bg-slate-700 dark:border-slate-600"
                                              style={{ left: `${(trim.end/duration)*100}%`, transform: 'translate(0, -50%)' }}
                                              onMouseDown={(e) => handleTimelineMouseDown(e, 'end')}
+                                             onTouchStart={(e) => handleTimelineMouseDown(e, 'end')}
                                              title={`结束: ${formatTime(trim.end)}`}
                                         >
                                             <div className="w-1 h-3 bg-slate-300 rounded-full group-hover:bg-blue-500 dark:bg-slate-500"></div>
@@ -578,6 +590,12 @@
                                                      setSelectedKeyframeId(kf.id); 
                                                      draggingKeyframeIdRef.current = kf.id;
                                                      videoRef.current.currentTime = kf.time; 
+                                                 }}
+                                                 onTouchStart={(e) => {
+                                                     e.stopPropagation();
+                                                     setSelectedKeyframeId(kf.id);
+                                                     draggingKeyframeIdRef.current = kf.id;
+                                                     videoRef.current.currentTime = kf.time;
                                                  }}
                                             />
                                         ))}
@@ -820,101 +838,349 @@
                     const width = video.videoWidth % 2 === 0 ? video.videoWidth : video.videoWidth - 1;
                     const height = video.videoHeight % 2 === 0 ? video.videoHeight : video.videoHeight - 1;
                     
-                    // Fix Mp4Muxer reference
-                    const Mp4Muxer = window.Mp4Muxer;
-                    if (!Mp4Muxer) throw new Error("Mp4Muxer not loaded");
+                    // --- Worker Code ---
+                    const workerCode = `
+                        importScripts("https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.0/build/mp4-muxer.min.js");
 
-                    const muxer = new Mp4Muxer.Muxer({
-                        target: new Mp4Muxer.ArrayBufferTarget(),
-                        video: { codec: 'avc', width, height },
-                        audio: { codec: 'aac', numberOfChannels: audioBuffer.numberOfChannels, sampleRate: audioBuffer.sampleRate },
-                        fastStart: 'in-memory'
+                        let canvas, gl, muxer, videoEncoder, audioEncoder;
+                        let writableStream = null;
+                        let frameCounter = 0;
+
+                        // Vertex Shader: Applies Scale and Translation
+                        const vsSource = \`
+                            attribute vec2 a_position;
+                            attribute vec2 a_texCoord;
+                            varying vec2 v_texCoord;
+                            uniform vec2 u_scale;
+                            uniform vec2 u_translation;
+                            
+                            void main() {
+                                // Scale is around center (0,0), then translate
+                                vec2 scaled = a_position * u_scale;
+                                vec2 translated = scaled + u_translation;
+                                gl_Position = vec4(translated, 0, 1);
+                                v_texCoord = a_texCoord;
+                            }
+                        \`;
+
+                        const fsSource = \`
+                            precision mediump float;
+                            varying vec2 v_texCoord;
+                            uniform sampler2D u_texture;
+                            
+                            void main() {
+                                gl_FragColor = texture2D(u_texture, v_texCoord);
+                            }
+                        \`;
+
+                        function initWebGL(width, height) {
+                            canvas = new OffscreenCanvas(width, height);
+                            gl = canvas.getContext('webgl');
+                            if (!gl) throw new Error("WebGL not supported in Worker");
+
+                            // Create Shaders
+                            const vs = gl.createShader(gl.VERTEX_SHADER);
+                            gl.shaderSource(vs, vsSource);
+                            gl.compileShader(vs);
+                            if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(vs));
+
+                            const fs = gl.createShader(gl.FRAGMENT_SHADER);
+                            gl.shaderSource(fs, fsSource);
+                            gl.compileShader(fs);
+                            if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(fs));
+
+                            const program = gl.createProgram();
+                            gl.attachShader(program, vs);
+                            gl.attachShader(program, fs);
+                            gl.linkProgram(program);
+                            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
+                            gl.useProgram(program);
+
+                            // Buffers
+                            const positions = new Float32Array([
+                                -1.0, -1.0,
+                                 1.0, -1.0,
+                                -1.0,  1.0,
+                                 1.0,  1.0,
+                            ]);
+                            const texCoords = new Float32Array([
+                                0.0, 1.0,
+                                1.0, 1.0,
+                                0.0, 0.0,
+                                1.0, 0.0,
+                            ]);
+
+                            const pBuf = gl.createBuffer();
+                            gl.bindBuffer(gl.ARRAY_BUFFER, pBuf);
+                            gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+                            const aPos = gl.getAttribLocation(program, 'a_position');
+                            gl.enableVertexAttribArray(aPos);
+                            gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+                            const tBuf = gl.createBuffer();
+                            gl.bindBuffer(gl.ARRAY_BUFFER, tBuf);
+                            gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
+                            const aTex = gl.getAttribLocation(program, 'a_texCoord');
+                            gl.enableVertexAttribArray(aTex);
+                            gl.vertexAttribPointer(aTex, 2, gl.FLOAT, false, 0, 0);
+
+                            // Texture
+                            const texture = gl.createTexture();
+                            gl.bindTexture(gl.TEXTURE_2D, texture);
+                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+                            return { program, texture };
+                        }
+
+                        self.onmessage = async (e) => {
+                            const { type, data } = e.data;
+
+                            if (type === 'init') {
+                                try {
+                                    const { width, height, fileHandle, audioConfig } = data;
+                                    
+                                    // 1. Setup Output Target (Streaming IO)
+                                    let target;
+                                    if (fileHandle) {
+                                        writableStream = await fileHandle.createWritable();
+                                        target = new Mp4Muxer.FileSystemWritableFileStreamTarget(writableStream);
+                                    } else {
+                                        // Fallback for mobile/unsupported: In-Memory
+                                        target = new Mp4Muxer.ArrayBufferTarget();
+                                    }
+
+                                    // 2. Setup Muxer
+                                    muxer = new Mp4Muxer.Muxer({
+                                        target: target,
+                                        video: { codec: 'avc', width, height },
+                                        audio: { codec: 'aac', numberOfChannels: audioConfig.numberOfChannels, sampleRate: audioConfig.sampleRate },
+                                        fastStart: fileHandle ? false : 'in-memory' // Fragmented/Streaming for disk, In-Memory for fallback
+                                    });
+
+                                    // 3. Setup Encoders
+                                    videoEncoder = new VideoEncoder({
+                                        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+                                        error: e => self.postMessage({ type: 'error', message: e.message })
+                                    });
+                                    videoEncoder.configure({
+                                        codec: 'avc1.4d0033',
+                                        width, height,
+                                        bitrate: 10_000_000,
+                                        framerate: 30
+                                    });
+
+                                    audioEncoder = new AudioEncoder({
+                                        output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
+                                        error: e => self.postMessage({ type: 'error', message: e.message })
+                                    });
+                                    audioEncoder.configure({
+                                        codec: 'mp4a.40.2', 
+                                        numberOfChannels: audioConfig.numberOfChannels, 
+                                        sampleRate: audioConfig.sampleRate, 
+                                        bitrate: 128000
+                                    });
+
+                                    // 4. Setup WebGL
+                                    self.webgl = initWebGL(width, height);
+                                    self.width = width;
+                                    self.height = height;
+
+                                    self.postMessage({ type: 'ready' });
+
+                                } catch (err) {
+                                    self.postMessage({ type: 'error', message: err.message });
+                                }
+                            }
+
+                            if (type === 'encode-audio') {
+                                // Audio Streaming: Receive chunks of PCM data
+                                const { planarData, format, sampleRate, numberOfFrames, timestamp } = data;
+                                const audioData = new AudioData({
+                                    format,
+                                    sampleRate,
+                                    numberOfFrames,
+                                    numberOfChannels: planarData.length,
+                                    timestamp,
+                                    data: (() => {
+                                        // Flatten planar data for AudioData (interleaved or planar depending on format)
+                                        // WebCodecs AudioData usually expects one buffer.
+                                        // For 'f32-planar', we concatenate the channels.
+                                        const totalLen = planarData[0].length * planarData.length;
+                                        const buffer = new Float32Array(totalLen);
+                                        for (let i = 0; i < planarData.length; i++) {
+                                            buffer.set(planarData[i], i * planarData[0].length);
+                                        }
+                                        return buffer;
+                                    })()
+                                });
+                                audioEncoder.encode(audioData);
+                                audioData.close();
+                            }
+
+                            if (type === 'encode-video') {
+                                const { frame, transform, timestamp, keyFrame } = data;
+                                
+                                // GPU Acceleration: Render to OffscreenCanvas
+                                const { program, texture } = self.webgl;
+                                gl.activeTexture(gl.TEXTURE0);
+                                gl.bindTexture(gl.TEXTURE_2D, texture);
+                                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame);
+                                
+                                const uScale = gl.getUniformLocation(program, 'u_scale');
+                                const uTrans = gl.getUniformLocation(program, 'u_translation');
+                                
+                                // Transform logic (scale, x, y are passed from main thread)
+                                // UI x/y are percentages (-50 to 50). WebGL Clip Space is -1 to 1.
+                                // Scale is 1.0 to 3.0.
+                                gl.uniform2f(uScale, transform.scale, transform.scale);
+                                gl.uniform2f(uTrans, transform.x / 50.0, -transform.y / 50.0); // Flip Y for WebGL
+                                
+                                gl.viewport(0, 0, self.width, self.height);
+                                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+                                // Create VideoFrame from Canvas
+                                const newFrame = new VideoFrame(canvas, { timestamp });
+                                videoEncoder.encode(newFrame, { keyFrame });
+                                newFrame.close();
+                                frame.close(); // Close original frame
+                                
+                                self.postMessage({ type: 'progress', value: 1 }); // Increment progress
+                            }
+
+                            if (type === 'flush') {
+                                await videoEncoder.flush();
+                                await audioEncoder.flush();
+                                muxer.finalize();
+                                
+                                if (writableStream) {
+                                    await writableStream.close();
+                                }
+                                
+                                if (muxer.target instanceof Mp4Muxer.ArrayBufferTarget) {
+                                    self.postMessage({ type: 'done', buffer: muxer.target.buffer });
+                                } else {
+                                    self.postMessage({ type: 'done' });
+                                }
+                            }
+                        };
+                    `;
+
+                    // Create Worker
+                    const blob = new Blob([workerCode], { type: 'application/javascript' });
+                    const worker = new Worker(URL.createObjectURL(blob));
+
+                    // File System Access API (Streaming IO)
+                    let fileHandle = null;
+                    if ('showSaveFilePicker' in window) {
+                        try {
+                            fileHandle = await window.showSaveFilePicker({
+                                suggestedName: `video-${Date.now()}.mp4`,
+                                types: [{ description: 'MP4 Video', accept: { 'video/mp4': ['.mp4'] } }],
+                            });
+                        } catch (e) {
+                            console.log("User cancelled or API not supported, falling back to in-memory");
+                        }
+                    }
+
+                    // Init Worker
+                    worker.postMessage({
+                        type: 'init',
+                        data: {
+                            width, height,
+                            fileHandle: fileHandle,
+                            audioConfig: { numberOfChannels: audioBuffer.numberOfChannels, sampleRate: audioBuffer.sampleRate }
+                        }
                     });
 
-                    // Error handling wrapper
-                    let encoderError = null;
-
-                    const videoEncoder = new VideoEncoder({
-                        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-                        error: e => { console.error(e); encoderError = e; }
+                    await new Promise((resolve, reject) => {
+                        worker.onmessage = e => {
+                            if (e.data.type === 'ready') resolve();
+                            if (e.data.type === 'error') reject(new Error(e.data.message));
+                        };
                     });
+
+                    // --- Streaming Process ---
                     
-                    // Use Level 5.1 (avc1.4d0033) to support up to 4K resolution
-                    videoEncoder.configure({
-                        codec: 'avc1.4d0033', 
-                        width, 
-                        height, 
-                        bitrate: 10_000_000, // Increased bitrate for high resolution
-                        framerate: 30
-                    });
-
-                    const audioEncoder = new AudioEncoder({
-                        output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
-                        error: e => { console.error(e); encoderError = e; }
-                    });
-                    audioEncoder.configure({
-                        codec: 'mp4a.40.2', numberOfChannels: audioBuffer.numberOfChannels, sampleRate: audioBuffer.sampleRate, bitrate: 128000
-                    });
-
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-
-                    // Determine Trim Range
+                    // Audio Streaming (Chunk by Chunk)
                     const trimStart = trim?.start || 0;
                     const trimEnd = (trim?.end && trim.end > 0) ? trim.end : duration;
                     const exportDuration = Math.max(0, trimEnd - trimStart);
-
-                    if (exportDuration <= 0) throw new Error("无效的导出时长");
-
-                    // Process Audio
-                    const audioChunkSize = audioBuffer.sampleRate; // 1 second
-                    const numberOfChannels = audioBuffer.numberOfChannels;
+                    
+                    const audioChunkSize = audioBuffer.sampleRate; // 1s chunks
                     const startSample = Math.floor(trimStart * audioBuffer.sampleRate);
                     const endSample = Math.floor(trimEnd * audioBuffer.sampleRate);
                     const totalSamples = endSample - startSample;
-                    
-                    for (let i = 0; i < totalSamples; i += audioChunkSize) {
-                        if (encoderError) throw encoderError;
-                        
-                        const currentSampleIndex = startSample + i;
-                        const size = Math.min(audioChunkSize, totalSamples - i);
-                        const data = new Float32Array(size * numberOfChannels);
-                        
-                        let offset = 0;
-                        for (let ch = 0; ch < numberOfChannels; ch++) {
-                            data.set(audioBuffer.getChannelData(ch).subarray(currentSampleIndex, currentSampleIndex + size), offset);
-                            offset += size;
-                        }
 
-                        const audioData = new AudioData({
-                            timestamp: (i / audioBuffer.sampleRate) * 1e6, // Timestamp starts from 0
-                            numberOfChannels: numberOfChannels,
-                            sampleRate: audioBuffer.sampleRate,
-                            numberOfFrames: size,
-                            format: 'f32-planar',
-                            data: data
-                        });
-                        audioEncoder.encode(audioData);
-                        audioData.close();
+                    for (let i = 0; i < totalSamples; i += audioChunkSize) {
+                        const size = Math.min(audioChunkSize, totalSamples - i);
+                        const currentSampleIndex = startSample + i;
+                        const planarData = [];
+                        for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+                            const channelData = audioBuffer.getChannelData(ch);
+                            const chunk = new Float32Array(size);
+                            chunk.set(channelData.subarray(currentSampleIndex, currentSampleIndex + size));
+                            planarData.push(chunk);
+                        }
+                        
+                        worker.postMessage({
+                            type: 'encode-audio',
+                            data: {
+                                planarData,
+                                format: 'f32-planar',
+                                sampleRate: audioBuffer.sampleRate,
+                                numberOfFrames: size,
+                                timestamp: (i / audioBuffer.sampleRate) * 1e6
+                            }
+                        }, planarData.map(f32 => f32.buffer)); // Transfer buffers
                     }
 
-                    // Process Video
+                    // Video Streaming (Frame by Frame)
                     const fps = 30;
                     const totalFrames = Math.floor(exportDuration * fps);
-                    
-                    for (let i = 0; i < totalFrames; i++) {
-                        if (encoderError) throw encoderError;
+                    let processedFrames = 0;
 
+                    worker.onmessage = e => {
+                        if (e.data.type === 'progress') {
+                            processedFrames++;
+                            setProgress(Math.round((processedFrames / totalFrames) * 100));
+                        }
+                        if (e.data.type === 'done') {
+                            if (e.data.buffer) {
+                                // Fallback Download
+                                const blob = new Blob([e.data.buffer], { type: 'video/mp4' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `exported-video-${Date.now()}.mp4`;
+                                a.click();
+                            }
+                            setProgress(100);
+                        }
+                        if (e.data.type === 'error') {
+                            console.error("Worker Error:", e.data.message);
+                            alert("导出出错: " + e.data.message);
+                        }
+                    };
+
+                    for (let i = 0; i < totalFrames; i++) {
                         const timeRelativeToStart = i / fps;
                         const actualTime = trimStart + timeRelativeToStart;
 
                         video.currentTime = actualTime;
-                        await new Promise(r => { video.onseeked = r; });
+                        await new Promise(r => { 
+                            const onSeek = () => { video.removeEventListener('seeked', onSeek); r(); };
+                            video.addEventListener('seeked', onSeek);
+                        });
                         
-                        // Apply transforms
-                        let scale = 1, tx = 0, ty = 0;
+                        // Wait for frame to be ready (ensure repaint)
+                        // Using createImageBitmap or new VideoFrame from video element
+                        const frame = new VideoFrame(video, { timestamp: timeRelativeToStart * 1e6 });
+
+                        // Calculate Transform
+                        let scale = 1, x = 0, y = 0;
                         if (keyframes.length > 0) {
                              const sorted = keyframes;
                              let prev = sorted[0], next = sorted[sorted.length-1];
@@ -930,43 +1196,25 @@
 
                              const ratio = (next.time === prev.time) ? 0 : (actualTime - prev.time) / (next.time - prev.time);
                              scale = prev.scale + (next.scale - prev.scale) * ratio;
-                             tx = prev.x + (next.x - prev.x) * ratio;
-                             ty = prev.y + (next.y - prev.y) * ratio;
+                             x = prev.x + (next.x - prev.x) * ratio;
+                             y = prev.y + (next.y - prev.y) * ratio;
                         }
 
-                        ctx.fillStyle = '#000';
-                        ctx.fillRect(0, 0, width, height);
-                        
-                        ctx.save();
-                        ctx.translate(width/2, height/2);
-                        ctx.scale(scale, scale);
-                        ctx.translate(tx/100 * width, ty/100 * height);
-                        ctx.translate(-width/2, -height/2);
-                        ctx.drawImage(video, 0, 0, width, height);
-                        ctx.restore();
+                        worker.postMessage({
+                            type: 'encode-video',
+                            data: {
+                                frame,
+                                transform: { scale, x, y },
+                                timestamp: timeRelativeToStart * 1e6,
+                                keyFrame: i % 30 === 0
+                            }
+                        }, [frame]); // Transfer Frame
 
-                        const frame = new VideoFrame(canvas, { timestamp: timeRelativeToStart * 1e6 });
-                        videoEncoder.encode(frame, { keyFrame: i % 30 === 0 });
-                        frame.close();
-                        
-                        setProgress(Math.round((i / totalFrames) * 90));
-                        await new Promise(r => setTimeout(r, 0)); // yield
+                        // Yield to main thread to prevent UI freezing
+                        await new Promise(r => setTimeout(r, 0));
                     }
 
-                    await videoEncoder.flush();
-                    await audioEncoder.flush();
-                    muxer.finalize();
-                    
-                    const buffer = muxer.target.buffer;
-                    const blob = new Blob([buffer], { type: 'video/mp4' });
-                    const downloadUrl = URL.createObjectURL(blob);
-                    
-                    const a = document.createElement('a');
-                    a.href = downloadUrl;
-                    a.download = `exported-video-${Date.now()}.mp4`;
-                    a.click();
-                    
-                    setProgress(100);
+                    worker.postMessage({ type: 'flush' });
 
                 } catch (err) {
                     console.error(err);
