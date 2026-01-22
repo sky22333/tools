@@ -3,1025 +3,1004 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>网页在线录屏工具</title>
+    <title>Web Recorder Studio</title>
+    
+    <!-- Polyfill for process -->
+    <script>
+        window.process = { env: { NODE_ENV: 'production' } };
+    </script>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
                     colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                        }
+                        slate: { 850: '#1e293b', 900: '#0f172a', 950: '#020617' }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
                     }
                 }
             }
         }
     </script>
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Video Processing -->
+    <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.0/build/mp4-muxer.min.js"></script>
+
+    <!-- ByteMD -->
+    <link rel="stylesheet" href="https://unpkg.com/bytemd@1.21.0/dist/index.min.css">
+    <script src="https://unpkg.com/bytemd@1.21.0/dist/index.umd.js"></script>
+    
     <style>
         /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        .dark ::-webkit-scrollbar-thumb {
-            background: #475569;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        
-        /* Animation Classes */
-        .fade-enter-active, .fade-leave-active {
-            transition: opacity 0.3s ease;
-        }
-        .fade-enter-from, .fade-leave-to {
-            opacity: 0;
-        }
-        
-        .slide-up-enter-active, .slide-up-leave-active {
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .slide-up-enter-from, .slide-up-leave-to {
-            opacity: 0;
-            transform: translateY(20px);
-        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Range Input Styling */
-        input[type=range] {
-            -webkit-appearance: none; 
-            background: transparent; 
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-        }
-        input[type=range]:focus {
-            outline: none; 
-        }
-        
-        /* Timeline Markers */
-        .timeline-marker {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background-color: #ef4444;
-            pointer-events: none;
-            z-index: 10;
-        }
+        /* Range Input */
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #0f172a; margin-top: -6px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.1s; cursor: pointer; }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; }
+
+        /* ByteMD Customization */
+        .bytemd { height: 100% !important; border: none !important; }
+        .bytemd-toolbar { border-bottom: 1px solid #f1f5f9 !important; background-color: #f8fafc !important; padding: 0 12px !important; }
+        .bytemd-body { background-color: #ffffff; }
     </style>
 </head>
-<body class="bg-gray-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-300 min-h-screen flex flex-col">
+<body class="bg-gray-50 text-slate-900 overflow-hidden">
+    <div id="root"></div>
 
-<div id="app" class="flex flex-col flex-grow h-screen overflow-hidden">
-    <!-- Navbar -->
-    <nav class="border-b border-gray-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                        <i class="fas fa-video"></i>
-                    </div>
-                    <span class="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-purple-600 dark:from-brand-400 dark:to-purple-400">
-                        网页在线录屏工具
-                    </span>
-                </div>
-                <div class="flex items-center gap-4">
-                    <button @click="toggleTheme" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-500 dark:text-slate-400">
-                        <i :class="isDark ? 'fas fa-sun' : 'fas fa-moon'"></i>
-                    </button>
-                    <a href="https://github.com/sky22333/tools" target="_blank" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-500 dark:text-slate-400">
-                        <i class="fab fa-github text-lg"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+        const { Video, Mic, Monitor, Settings, X, Download, Play, Pause, Plus, Trash2, ChevronLeft, Search, Edit2, Eye, FileText, MoreHorizontal } = (typeof lucide !== 'undefined' && lucide.icons) ? lucide.icons : lucide;
+        // Fix Mp4Muxer reference
+        const Mp4Muxer = window.Mp4Muxer;
 
-    <!-- Main Content -->
-    <main class="flex-grow relative overflow-hidden flex flex-col">
-        
-        <!-- View: Setup -->
-        <transition name="slide-up" mode="out-in">
-            <div v-if="currentStep === 'setup'" class="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 max-w-2xl mx-auto">
-                <div class="space-y-2">
-                    <h1 class="text-4xl md:text-5xl font-bold tracking-tight">
-                        专业的网页录屏工具
-                    </h1>
-                    <p class="text-lg text-gray-600 dark:text-slate-400">
-                        支持音频混音、剪辑、关键帧缩放，导出 MP4
-                    </p>
-                </div>
+        // --- UI Components ---
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                    <!-- Audio Settings -->
-                    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 text-left hover:shadow-md transition-shadow">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
-                                <i class="fas fa-microphone"></i>
-                            </div>
-                            <h3 class="font-semibold">音频设置</h3>
-                        </div>
-                        
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm">麦克风</span>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" v-model="config.micEnabled" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
-                                </label>
-                            </div>
-                            
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm">系统声音</span>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" v-model="config.systemAudioEnabled" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
-                                </label>
-                            </div>
+        const Icon = ({ icon, size = 20, className = "" }) => {
+            const ref = useRef(null);
+            useEffect(() => {
+                if (ref.current && icon) {
+                    ref.current.innerHTML = '';
+                    try {
+                        if (typeof lucide !== 'undefined' && lucide.createElement) {
+                            const svg = lucide.createElement(icon);
+                            svg.setAttribute('width', size);
+                            svg.setAttribute('height', size);
+                            if (className) {
+                                const existingClass = svg.getAttribute('class') || '';
+                                svg.setAttribute('class', (existingClass + ' ' + className).trim());
+                            }
+                            ref.current.appendChild(svg);
+                        } else if (Array.isArray(icon)) {
+                             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                             svg.setAttribute('width', size);
+                             svg.setAttribute('height', size);
+                             svg.setAttribute('viewBox', '0 0 24 24');
+                             svg.setAttribute('fill', 'none');
+                             svg.setAttribute('stroke', 'currentColor');
+                             svg.setAttribute('stroke-width', '2');
+                             svg.setAttribute('stroke-linecap', 'round');
+                             svg.setAttribute('stroke-linejoin', 'round');
+                             if (className) svg.setAttribute('class', className);
+                             icon.forEach(([tag, attrs]) => {
+                                 const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+                                 Object.entries(attrs || {}).forEach(([k, v]) => el.setAttribute(k, v));
+                                 svg.appendChild(el);
+                             });
+                             ref.current.appendChild(svg);
+                        } else if (typeof icon.toSvg === 'function') {
+                             const svg = icon.toSvg({ class: className, width: size, height: size });
+                             ref.current.innerHTML = svg;
+                        }
+                    } catch (e) { console.error("Icon render error", e); }
+                }
+            }, [icon, size, className]);
+            return <span ref={ref} className="flex items-center justify-center" />;
+        };
 
-                             <div v-if="config.micEnabled" class="pt-2">
-                                <label class="text-xs text-gray-500 mb-1 block">麦克风音量</label>
-                                <input type="range" v-model.number="config.micVolume" min="0" max="2" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-brand-500">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Video Settings -->
-                    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 text-left hover:shadow-md transition-shadow">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg">
-                                <i class="fas fa-desktop"></i>
-                            </div>
-                            <h3 class="font-semibold">录制选项</h3>
-                        </div>
-                        
-                        <div class="space-y-4">
-                            <div>
-                                <label class="text-sm block mb-2">分辨率偏好</label>
-                                <select v-model="config.resolution" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
-                                    <option value="1080p">1080p (Full HD)</option>
-                                    <option value="720p">720p (HD)</option>
-                                    <option value="original">原始分辨率</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-sm block mb-2">帧率</label>
-                                <select v-model="config.frameRate" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
-                                    <option value="30">30 FPS</option>
-                                    <option value="60">60 FPS</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <button @click="startRecording" class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-brand-600 font-pj rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 hover:bg-brand-700 hover:scale-105 shadow-lg shadow-brand-500/30">
-                    <i class="fas fa-circle text-red-400 mr-2 animate-pulse"></i> 开始录制
+        const Button = ({ children, onClick, variant = 'primary', className = '', icon, disabled = false }) => {
+            const baseStyle = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-1";
+            const variants = {
+                primary: "bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/20 focus:ring-slate-900",
+                secondary: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm focus:ring-slate-200",
+                ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100"
+            };
+            
+            return (
+                <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
+                    {icon && <Icon icon={icon} size={18} />}
+                    {children}
                 </button>
+            );
+        };
+
+        const Card = ({ title, children, actions, className = '', footer, noPadding = false }) => (
+            <div className={`bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col overflow-hidden group ${className}`}>
+                {(title || actions) && (
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white/50 backdrop-blur-sm">
+                        {title && <h3 className="font-semibold text-slate-800 text-base">{title}</h3>}
+                        {actions && <div className="flex gap-2">{actions}</div>}
+                    </div>
+                )}
+                <div className={`${noPadding ? '' : 'p-6'} flex-grow relative`}>{children}</div>
+                {footer && (
+                    <div className="px-6 py-3 border-t border-slate-100 bg-gray-50/30 flex justify-between items-center gap-3">
+                        {footer}
+                    </div>
+                )}
             </div>
-        </transition>
+        );
 
-        <!-- View: Recording -->
-        <transition name="fade">
-            <div v-if="currentStep === 'recording'" class="flex flex-col items-center justify-center h-full bg-slate-900 text-white relative">
-                <div class="absolute inset-0 overflow-hidden opacity-20 pointer-events-none flex items-center justify-center">
-                     <canvas ref="audioVisualizer" class="w-full h-64"></canvas>
-                </div>
-
-                <div class="z-10 text-center space-y-6">
-                    <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-red-500/20 animate-pulse">
-                        <div class="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.6)]">
-                            <span class="text-2xl font-mono font-bold">{{ formattedDuration }}</span>
-                        </div>
-                    </div>
-                    
-                    <h2 class="text-2xl font-semibold">正在录制...</h2>
-                    <p class="text-slate-400">请保持此标签页打开，或最小化</p>
-
-                    <div class="flex gap-4 justify-center pt-8">
-                        <button @click="stopRecording" class="px-8 py-3 bg-white text-slate-900 rounded-full font-bold hover:bg-gray-100 transition-colors flex items-center gap-2">
-                            <i class="fas fa-stop"></i> 结束录制
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </transition>
-
-        <!-- View: Editor -->
-        <transition name="slide-up">
-            <div v-if="currentStep === 'editor'" class="flex flex-col h-full bg-gray-100 dark:bg-slate-950">
-                <!-- Toolbar -->
-                <div class="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 p-2 flex items-center justify-between px-4">
-                    <div class="flex items-center gap-2">
-                        <button @click="reset" class="px-3 py-1.5 text-sm text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md">
-                            <i class="fas fa-arrow-left mr-1"></i> 重录
-                        </button>
-                        <div class="h-6 w-px bg-gray-300 dark:bg-slate-700 mx-2"></div>
-                        <span class="text-sm font-medium">编辑模式</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button @click="exportVideo" :disabled="isExporting" class="px-4 py-1.5 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2">
-                            <i v-if="!isExporting" class="fas fa-download"></i>
-                            <i v-else class="fas fa-spinner fa-spin"></i>
-                            {{ isExporting ? `导出中 ${exportProgress}%` : '导出 MP4' }}
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Main Editor Area -->
-                <div class="flex-grow flex flex-col md:flex-row overflow-hidden">
-                    <!-- Video Preview -->
-                    <div class="flex-grow bg-black relative flex items-center justify-center p-4">
-                        <video 
-                            ref="previewVideo" 
-                            class="max-h-full max-w-full shadow-2xl" 
-                            :src="recordedUrl" 
-                            @loadedmetadata="onVideoLoaded"
-                            @timeupdate="onTimeUpdate"
-                            @click="togglePlay"
-                        ></video>
-                        
-                        <!-- Overlay Controls -->
-                        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md rounded-full px-4 py-2 flex items-center gap-4 text-white opacity-0 hover:opacity-100 transition-opacity duration-300">
-                            <button @click="togglePlay" class="hover:text-brand-400">
-                                <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
+        const Modal = ({ isOpen, onClose, title, children }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative z-10 animate-slide-up border border-white/20">
+                        <div className="flex justify-between items-center p-6 border-b border-slate-100">
+                            <h3 className="text-xl font-bold text-slate-900">{title}</h3>
+                            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 p-2 rounded-full hover:bg-slate-100">
+                                <Icon icon={X} size={20} />
                             </button>
-                            <span class="text-xs font-mono">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
                         </div>
-                    </div>
-
-                    <!-- Inspector / Keyframes Sidebar -->
-                    <div class="w-full md:w-80 bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-800 flex flex-col z-20 shadow-xl">
-                        <div class="p-4 border-b border-gray-200 dark:border-slate-800">
-                            <h3 class="font-bold text-sm uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-4">关键帧动画</h3>
-                            
-                            <div class="space-y-4">
-                                <button @click="addKeyframe" class="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-dashed border-gray-300 dark:border-slate-600">
-                                    <i class="fas fa-plus mr-1"></i> 添加当前帧状态
-                                </button>
-
-                                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 space-y-3" v-if="currentKeyframe">
-                                    <div class="text-xs font-mono text-gray-500 flex justify-between">
-                                        <span>当前: {{ formatTime(currentTime) }}</span>
-                                        <button @click="removeKeyframe(currentKeyframe.id)" class="text-red-500 hover:text-red-600">删除</button>
-                                    </div>
-                                    <div>
-                                        <label class="text-xs block mb-1">缩放 (Scale) x{{ currentKeyframe.scale.toFixed(2) }}</label>
-                                        <input type="range" v-model.number="currentKeyframe.scale" min="1" max="3" step="0.1" class="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-brand-500">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs block mb-1">X 偏移 ({{ currentKeyframe.x.toFixed(0) }}%)</label>
-                                        <input type="range" v-model.number="currentKeyframe.x" min="-50" max="50" step="1" class="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-brand-500">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs block mb-1">Y 偏移 ({{ currentKeyframe.y.toFixed(0) }}%)</label>
-                                        <input type="range" v-model.number="currentKeyframe.y" min="-50" max="50" step="1" class="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-brand-500">
-                                    </div>
-                                </div>
-                                <div v-else class="text-center text-sm text-gray-400 py-4">
-                                    移动时间轴选择位置
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex-grow overflow-y-auto p-4 space-y-2">
-                             <div v-for="kf in sortedKeyframes" :key="kf.id" 
-                                  @click="seekTo(kf.time)"
-                                  class="flex items-center gap-2 p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-sm group"
-                                  :class="{'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800': isCurrentKeyframe(kf)}">
-                                <div class="w-2 h-2 rounded-full bg-brand-500"></div>
-                                <span class="font-mono text-xs">{{ formatTime(kf.time) }}</span>
-                                <span class="text-xs text-gray-500">x{{ kf.scale }}</span>
-                                <button @click.stop="removeKeyframe(kf.id)" class="ml-auto opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                             </div>
-                        </div>
+                        <div className="p-6">{children}</div>
                     </div>
                 </div>
+            );
+        };
 
-                <!-- Timeline Bottom Bar -->
-                <div class="h-24 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 p-4 flex flex-col justify-center relative select-none">
-                    <!-- Trimmer Handles -->
-                    <div class="relative h-12 w-full flex items-center" ref="timelineContainer">
-                        <!-- Background Track -->
-                        <div class="absolute left-0 right-0 h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                             <!-- Progress Bar -->
-                             <div class="h-full bg-blue-400/30" :style="{ width: (currentTime / duration) * 100 + '%' }"></div>
-                        </div>
-                        
-                        <!-- Active Range Highlight -->
-                        <div class="absolute h-2 bg-brand-500 rounded-full opacity-50"
-                             :style="{ left: (trimStart / duration) * 100 + '%', right: (100 - (trimEnd / duration) * 100) + '%' }">
-                        </div>
+        const Toggle = ({ label, checked, onChange }) => (
+            <div className="flex items-center justify-between cursor-pointer group" onClick={() => onChange(!checked)}>
+                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">{label}</span>
+                <div className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${checked ? 'bg-slate-900' : 'bg-slate-200'}`}>
+                    <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${checked ? 'translate-x-5' : ''}`}></div>
+                </div>
+            </div>
+        );
 
-                        <!-- Scrubber Head -->
-                        <div class="absolute w-0.5 h-8 bg-black dark:bg-white z-20 cursor-pointer"
-                             :style="{ left: (currentTime / duration) * 100 + '%' }"
-                             @mousedown="startScrubbing">
-                             <div class="w-3 h-3 bg-black dark:bg-white rotate-45 -translate-x-1.5 -translate-y-1"></div>
-                        </div>
-
-                        <!-- Start Handle -->
-                        <div class="absolute h-8 w-4 bg-brand-600 rounded-l-md cursor-ew-resize z-10 flex items-center justify-center text-white text-[10px]"
-                             :style="{ left: (trimStart / duration) * 100 + '%' }"
-                             @mousedown="startDrag('start')">
-                            <i class="fas fa-chevron-right"></i>
-                        </div>
-
-                        <!-- End Handle -->
-                        <div class="absolute h-8 w-4 bg-brand-600 rounded-r-md cursor-ew-resize z-10 flex items-center justify-center text-white text-[10px] -translate-x-full"
-                             :style="{ left: (trimEnd / duration) * 100 + '%' }"
-                             @mousedown="startDrag('end')">
-                            <i class="fas fa-chevron-left"></i>
-                        </div>
-
-                        <!-- Keyframe Dots on Timeline -->
-                        <div v-for="kf in keyframes" :key="kf.id"
-                             class="absolute w-2 h-2 bg-yellow-400 rounded-full top-1/2 -translate-y-1/2 pointer-events-none z-0 border border-black/20"
-                             :style="{ left: (kf.time / duration) * 100 + '%' }">
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-between text-xs text-gray-500 mt-2 font-mono">
-                        <span>{{ formatTime(trimStart) }}</span>
-                        <span>{{ formatTime(trimEnd) }}</span>
+        const Select = ({ label, value, onChange, options }) => (
+            <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</label>
+                <div className="relative">
+                    <select 
+                        value={value} 
+                        onChange={(e) => onChange(e.target.value)}
+                        className="w-full appearance-none bg-white border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-slate-900 block p-2.5 transition-shadow hover:border-slate-300"
+                    >
+                        {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-500">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
                 </div>
             </div>
-        </transition>
+        );
 
-    </main>
-</div>
+        const ByteMDEditor = ({ value, onChange }) => {
+            const editorRef = useRef(null);
+            const instanceRef = useRef(null);
 
-<script type="module">
-    import * as Mp4Muxer from 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.0.0/+esm';
-    const { createApp, ref, computed, onMounted, onUnmounted, watch, nextTick } = Vue;
+            useEffect(() => {
+                if (!editorRef.current) return;
+                
+                const editor = new bytemd.Editor({
+                    target: editorRef.current,
+                    props: {
+                        value: value || '',
+                        locale: {
+                            // Simple Chinese localization override if needed, but ByteMD defaults are English.
+                            // For simplicity, we use default.
+                        }
+                    }
+                });
 
-    createApp({
-        setup() {
-            // State
-            const isDark = ref(false);
-            const currentStep = ref('setup'); // setup, recording, editor
-            const config = ref({
-                micEnabled: true,
-                systemAudioEnabled: true,
-                micVolume: 1.0,
-                resolution: '1080p',
-                frameRate: 30
-            });
-            
-            // Recording State
-            const recordingStartTime = ref(0);
-            const recordingDuration = ref(0);
-            const timerInterval = ref(null);
-            
-            // Editor State
-            const recordedUrl = ref('');
-            const recordedBlob = ref(null);
-            const isPlaying = ref(false);
-            const currentTime = ref(0);
-            const duration = ref(1); // avoid div by zero
-            const trimStart = ref(0);
-            const trimEnd = ref(1);
-            
-            // Keyframes: { id, time, scale, x, y }
-            const keyframes = ref([]);
-            
-            // Internal Media Objects
-            let mediaRecorder = null;
-            let audioContext = null;
-            let mediaStream = null;
-            let micStream = null;
-            let audioDest = null;
-            
-            // Refs
-            const previewVideo = ref(null);
-            const timelineContainer = ref(null);
-            const audioVisualizer = ref(null);
-            let animationFrameId = null;
-            let analyser = null;
-            let dataArray = null;
+                editor.$on('change', (e) => {
+                    onChange(e.detail.value);
+                });
 
-            // Export State
-            const isExporting = ref(false);
-            const exportProgress = ref(0);
+                instanceRef.current = editor;
+
+                return () => {
+                    editor.$destroy();
+                };
+            }, []);
+
+            useEffect(() => {
+                if (instanceRef.current) {
+                    instanceRef.current.$set({ value: value || '' });
+                }
+            }, [value]);
+
+            return <div ref={editorRef} className="h-full w-full" />;
+        };
+
+        // --- Views ---
+
+        const DashboardView = ({ recordings, onNewRecording, onEdit, onDelete, onPreview, isRecording }) => {
+            const [searchTerm, setSearchTerm] = useState('');
+            
+            const filteredRecordings = recordings.filter(r => 
+                r.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                r.slug.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            return (
+                <div className="space-y-8 animate-fade-in pb-12">
+                    {/* Header & Search */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="relative max-w-lg w-full group">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Icon icon={Search} className="text-slate-400 group-focus-within:text-slate-900 transition-colors" />
+                            </div>
+                            <input 
+                                type="text" 
+                                placeholder="搜索录屏..." 
+                                className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent sm:text-sm transition-all shadow-sm group-hover:shadow-md"
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <Button onClick={onNewRecording} icon={Video} disabled={isRecording} className="shadow-lg hover:shadow-xl hover:scale-105 transition-transform py-3 px-6">
+                            新建录制
+                        </Button>
+                    </div>
+
+                    {/* Grid */}
+                    {filteredRecordings.length === 0 ? (
+                        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
+                            <div className="mx-auto w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                                <Icon icon={Video} size={32} className="text-slate-300" />
+                            </div>
+                            <h3 className="text-lg font-medium text-slate-900">暂无录屏内容</h3>
+                            <p className="text-slate-500 mt-1">点击右上角按钮开始您的第一次录制</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredRecordings.map(rec => (
+                                <Card 
+                                    key={rec.id}
+                                    title={rec.title}
+                                    footer={
+                                        <>
+                                            <div className="flex gap-1">
+                                                <button onClick={() => onEdit(rec)} className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" title="编辑">
+                                                    <Icon icon={Edit2} size={18} />
+                                                </button>
+                                                <button onClick={() => onDelete(rec.id)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="删除">
+                                                    <Icon icon={Trash2} size={18} />
+                                                </button>
+                                            </div>
+                                            <button onClick={() => onPreview(rec)} className="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-md hover:bg-slate-100 transition-colors">
+                                                预览
+                                            </button>
+                                        </>
+                                    }
+                                >
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                <Icon icon={FileText} size={14} />
+                                                <span className="font-mono truncate max-w-[120px]">{rec.slug}</span>
+                                            </div>
+                                            {rec.status === 'draft' && (
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                                    草稿
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="aspect-video bg-slate-100 rounded-lg overflow-hidden relative group cursor-pointer border border-slate-200" onClick={() => onPreview(rec)}>
+                                            <video src={rec.url} className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-colors flex items-center justify-center">
+                                                <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-300">
+                                                    <Icon icon={Play} size={20} className="text-slate-900 ml-1" />
+                                                </div>
+                                            </div>
+                                            <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-md font-mono">
+                                                {rec.duration}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center text-xs text-slate-400 gap-2">
+                                            <span>{rec.date}</span>
+                                            <span>•</span>
+                                            <span>Video</span>
+                                        </div>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const EditorView = ({ recording, onBack, onSave, onExport }) => {
+            const [activeTab, setActiveTab] = useState('editor'); // editor, notes
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [currentTime, setCurrentTime] = useState(0);
+            const [duration, setDuration] = useState(0);
+            const [keyframes, setKeyframes] = useState(recording.keyframes || []);
+            const [selectedKeyframeId, setSelectedKeyframeId] = useState(null);
+            const [trim, setTrim] = useState(recording.trim || { start: 0, end: 0 });
+            const [exportProgress, setExportProgress] = useState(0);
+            const [isExporting, setIsExporting] = useState(false);
+            const [markdown, setMarkdown] = useState(recording.notes || '# 视频备注\n\n在这里记录关于这个视频的笔记...');
+
+            const videoRef = useRef(null);
+            const timelineRef = useRef(null);
+            const isDraggingRef = useRef(false);
+            const draggingKeyframeIdRef = useRef(null);
+            const draggingTrimRef = useRef(null);
 
             // Helpers
-            const toggleTheme = () => {
-                isDark.value = !isDark.value;
-                if (isDark.value) document.documentElement.classList.add('dark');
-                else document.documentElement.classList.remove('dark');
+            const formatTime = (s) => {
+                if (isNaN(s)) return "00:00";
+                const m = Math.floor(s / 60).toString().padStart(2, '0');
+                const sec = Math.floor(s % 60).toString().padStart(2, '0');
+                return `${m}:${sec}`;
             };
 
-            const formatTime = (seconds) => {
-                const m = Math.floor(seconds / 60);
-                const s = Math.floor(seconds % 60);
-                const ms = Math.floor((seconds % 1) * 100);
-                return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
-            };
-            
-            const formattedDuration = computed(() => formatTime(recordingDuration.value));
-
-            // --- Recording Logic ---
-
-            const startRecording = async () => {
-                try {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const chunks = [];
-                    
-                    // 1. Get Display Media
-                    const displayMediaOptions = {
-                        video: {
-                            frameRate: parseInt(config.value.frameRate)
-                        },
-                        audio: config.value.systemAudioEnabled
-                    };
-                    
-                    mediaStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
-                    
-                    // Stop if user cancels browser dialog
-                    mediaStream.getVideoTracks()[0].onended = stopRecording;
-
-                    // 2. Audio Mixing
-                    const dest = audioContext.createMediaStreamDestination();
-                    const masterGain = audioContext.createGain(); // Master Mix Bus
-                    masterGain.gain.value = 1.0;
-                    
-                    // Connect Master to Destination (for recording)
-                    masterGain.connect(dest);
-                    
-                    // Visualizer Setup
-                    analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 2048;
-                    // Connect Master to Analyser (for visualization)
-                    masterGain.connect(analyser);
-                    dataArray = new Uint8Array(analyser.frequencyBinCount);
-                    
-                    // System Audio
-                    if (config.value.systemAudioEnabled && mediaStream.getAudioTracks().length > 0) {
-                        const sysSource = audioContext.createMediaStreamSource(mediaStream);
-                        const sysGain = audioContext.createGain();
-                        sysGain.gain.value = 1.0;
-                        sysSource.connect(sysGain).connect(masterGain);
-                    }
-                    
-                    // Mic Audio
-                    if (config.value.micEnabled) {
-                        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        const micSource = audioContext.createMediaStreamSource(micStream);
-                        const micGain = audioContext.createGain();
-                        micGain.gain.value = config.value.micVolume;
-                        micSource.connect(micGain).connect(masterGain);
-                    }
-
-                    // 3. Create Combined Stream
-                    // Use video from displayMedia and audio from mixed destination
-                    const tracks = [
-                        ...mediaStream.getVideoTracks(),
-                        ...dest.stream.getAudioTracks()
-                    ];
-                    const combinedStream = new MediaStream(tracks);
-                    
-                    // 4. Start Recorder
-                    mediaRecorder = new MediaRecorder(combinedStream, {
-                        mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'
-                    });
-                    
-                    mediaRecorder.ondataavailable = (e) => {
-                        if (e.data.size > 0) chunks.push(e.data);
-                    };
-                    
-                    mediaRecorder.onstop = () => {
-                        const blob = new Blob(chunks, { type: 'video/webm' });
-                        recordedBlob.value = blob;
-                        recordedUrl.value = URL.createObjectURL(blob);
-                        currentStep.value = 'editor';
-                        cleanupStreams();
-                    };
-
-                    const draw = () => {
-                        if (currentStep.value !== 'recording') return;
-                        animationFrameId = requestAnimationFrame(draw);
-                        
-                        const canvas = audioVisualizer.value;
-                        if (!canvas) return;
-
-                        // Resize if needed
-                        if (canvas.width !== canvas.offsetWidth || canvas.height !== canvas.offsetHeight) {
-                            canvas.width = canvas.offsetWidth;
-                            canvas.height = canvas.offsetHeight;
-                        }
-                        const ctx = canvas.getContext('2d');
-                        const width = canvas.width;
-                        const height = canvas.height;
-
-                        ctx.clearRect(0, 0, width, height);
-                        analyser.getByteTimeDomainData(dataArray);
-
-                        ctx.lineWidth = 2;
-                        ctx.strokeStyle = 'rgb(255, 255, 255)';
-                        ctx.beginPath();
-                        
-                        const sliceWidth = width * 1.0 / dataArray.length;
-                        let x = 0;
-                        
-                        for (let i = 0; i < dataArray.length; i++) {
-                            const v = dataArray[i] / 128.0;
-                            const y = v * height / 2;
-                            if (i === 0) ctx.moveTo(x, y);
-                            else ctx.lineTo(x, y);
-                            x += sliceWidth;
-                        }
-                        ctx.stroke();
-                    };
-                    draw();
-                    
-                    mediaRecorder.start();
-
-                    currentStep.value = 'recording';
-                    recordingStartTime.value = Date.now();
-                    timerInterval.value = setInterval(() => {
-                        recordingDuration.value = (Date.now() - recordingStartTime.value) / 1000;
-                    }, 100);
-                    
-                } catch (err) {
-                    console.error("Recording error:", err);
-                    alert("无法开始录制: " + err.message);
+            useEffect(() => {
+                if (duration > 0 && trim.end === 0) {
+                    setTrim(prev => ({ ...prev, end: duration }));
                 }
-            };
+            }, [duration]);
 
-            const stopRecording = () => {
-                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                    mediaRecorder.stop();
-                }
-                if (timerInterval.value) clearInterval(timerInterval.value);
-                if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            };
-
-            const cleanupStreams = () => {
-                if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
-                if (micStream) micStream.getTracks().forEach(t => t.stop());
-                if (audioContext) audioContext.close();
-            };
-
-            const reset = () => {
-                currentStep.value = 'setup';
-                recordedUrl.value = '';
-                recordedBlob.value = null;
-                keyframes.value = [];
-            };
-
-            // --- Editor Logic ---
-            
-            const onVideoLoaded = () => {
-                if(previewVideo.value) {
-                    duration.value = previewVideo.value.duration;
-                    trimStart.value = 0;
-                    trimEnd.value = duration.value;
-                }
-            };
-            
-            const onTimeUpdate = () => {
-                if(previewVideo.value) {
-                    currentTime.value = previewVideo.value.currentTime;
-                    // Loop if trimming
-                    if (currentTime.value > trimEnd.value) {
-                        previewVideo.value.pause();
-                        isPlaying.value = false;
-                        previewVideo.value.currentTime = trimStart.value;
-                    }
-                }
-            };
-            
             const togglePlay = () => {
-                if(!previewVideo.value) return;
-                if(previewVideo.value.paused) {
-                    if (currentTime.value >= trimEnd.value) {
-                        previewVideo.value.currentTime = trimStart.value;
-                    }
-                    previewVideo.value.play();
-                    isPlaying.value = true;
-                } else {
-                    previewVideo.value.pause();
-                    isPlaying.value = false;
-                }
-            };
-            
-            const seekTo = (time) => {
-                if(previewVideo.value) {
-                    previewVideo.value.currentTime = time;
+                if (videoRef.current) {
+                    if (isPlaying) videoRef.current.pause();
+                    else videoRef.current.play();
+                    setIsPlaying(!isPlaying);
                 }
             };
 
-            // Keyframe Management
+            const handleTimeUpdate = () => {
+                if (videoRef.current) setCurrentTime(videoRef.current.currentTime);
+            };
+
+            // Keyframes Logic
             const addKeyframe = () => {
-                const kf = {
-                    id: Date.now(),
-                    time: currentTime.value,
-                    scale: 1,
-                    x: 0,
-                    y: 0
-                };
-                // Check if exists close by
-                const existing = keyframes.value.find(k => Math.abs(k.time - kf.time) < 0.1);
-                if(existing) {
-                    Object.assign(existing, kf);
-                } else {
-                    keyframes.value.push(kf);
-                }
-                keyframes.value.sort((a,b) => a.time - b.time);
+                const newKf = { id: Date.now(), time: currentTime, scale: 1.5, x: 0, y: 0 };
+                setKeyframes(prev => [...prev, newKf].sort((a,b) => a.time - b.time));
+                setSelectedKeyframeId(newKf.id);
             };
-
-            const removeKeyframe = (id) => {
-                keyframes.value = keyframes.value.filter(k => k.id !== id);
+            const updateKeyframe = (id, updates) => {
+                setKeyframes(prev => prev.map(kf => kf.id === id ? { ...kf, ...updates } : kf));
             };
-
-            const sortedKeyframes = computed(() => {
-                return [...keyframes.value].sort((a,b) => a.time - b.time);
-            });
-            
-            const currentKeyframe = computed(() => {
-                // Find the keyframe that is "active" or being edited near current time
-                return keyframes.value.find(k => Math.abs(k.time - currentTime.value) < 0.2);
-            });
-            
-            const isCurrentKeyframe = (kf) => {
-                return currentKeyframe.value && currentKeyframe.value.id === kf.id;
+            const deleteKeyframe = (id) => {
+                setKeyframes(prev => prev.filter(kf => kf.id !== id));
+                setSelectedKeyframeId(null);
             };
+            const selectedKeyframe = useMemo(() => keyframes.find(k => k.id === selectedKeyframeId), [keyframes, selectedKeyframeId]);
 
-            // Interpolation for Playback/Export
-            const getTransformAtTime = (t) => {
-                if (keyframes.value.length === 0) return { scale: 1, x: 0, y: 0 };
-                
-                // Find surrounding keyframes
-                const sorted = sortedKeyframes.value;
-                if (t <= sorted[0].time) return sorted[0];
-                if (t >= sorted[sorted.length - 1].time) return sorted[sorted.length - 1];
-                
-                let prev = sorted[0];
-                let next = sorted[sorted.length - 1];
-                
-                for (let i = 0; i < sorted.length - 1; i++) {
-                    if (t >= sorted[i].time && t < sorted[i+1].time) {
-                        prev = sorted[i];
-                        next = sorted[i+1];
-                        break;
+            // Transform logic
+            const currentTransform = useMemo(() => {
+                if (keyframes.length === 0) return { scale: 1, x: 0, y: 0 };
+                const sorted = keyframes;
+                if (currentTime <= sorted[0].time) return sorted[0];
+                if (currentTime >= sorted[sorted.length-1].time) return sorted[sorted.length-1];
+                let prev = sorted[0], next = sorted[sorted.length-1];
+                for(let i=0; i<sorted.length-1; i++) {
+                    if (currentTime >= sorted[i].time && currentTime < sorted[i+1].time) {
+                        prev = sorted[i]; next = sorted[i+1]; break;
                     }
                 }
-                
-                const ratio = (t - prev.time) / (next.time - prev.time);
-                // Linear interpolation
+                const ratio = (currentTime - prev.time) / (next.time - prev.time);
                 return {
                     scale: prev.scale + (next.scale - prev.scale) * ratio,
                     x: prev.x + (next.x - prev.x) * ratio,
                     y: prev.y + (next.y - prev.y) * ratio
                 };
-            };
+            }, [currentTime, keyframes]);
 
-            // --- Timeline Interaction ---
-            const dragging = ref(null); // 'start', 'end', 'scrub'
-            
-            const startDrag = (type) => {
-                dragging.value = type;
-                document.addEventListener('mousemove', onDrag);
-                document.addEventListener('mouseup', stopDrag);
+            // Dragging Logic
+            const handleTimelineMouseDown = (e, type = null) => {
+                if (type) {
+                    e.stopPropagation();
+                    draggingTrimRef.current = type;
+                } else {
+                    if (draggingKeyframeIdRef.current) return;
+                    isDraggingRef.current = true;
+                }
+                handleTimelineMove(e);
             };
             
-            const startScrubbing = (e) => {
-                dragging.value = 'scrub';
-                handleScrub(e);
-                document.addEventListener('mousemove', onDrag);
-                document.addEventListener('mouseup', stopDrag);
-            };
-            
-            const onDrag = (e) => {
-                if (!dragging.value || !timelineContainer.value) return;
-                
-                const rect = timelineContainer.value.getBoundingClientRect();
+            const handleTimelineMove = (e) => {
+                if (!timelineRef.current) return;
+                const rect = timelineRef.current.getBoundingClientRect();
                 const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                const time = pos * duration.value;
-                
-                if (dragging.value === 'scrub') {
-                    seekTo(time);
-                } else if (dragging.value === 'start') {
-                    trimStart.value = Math.min(time, trimEnd.value - 0.5);
-                    seekTo(trimStart.value);
-                } else if (dragging.value === 'end') {
-                    trimEnd.value = Math.max(time, trimStart.value + 0.5);
-                    seekTo(trimEnd.value);
+                const time = pos * duration;
+
+                if (draggingTrimRef.current) {
+                    setTrim(prev => {
+                        let newTrim = { ...prev };
+                        if (draggingTrimRef.current === 'start') {
+                            newTrim.start = Math.min(time, prev.end - 0.5);
+                        } else {
+                            newTrim.end = Math.max(time, prev.start + 0.5);
+                        }
+                        return newTrim;
+                    });
+                } else if (draggingKeyframeIdRef.current) {
+                    // Dragging keyframe
+                    updateKeyframe(draggingKeyframeIdRef.current, { time });
+                } else if (isDraggingRef.current) {
+                    // Dragging playhead
+                    if (videoRef.current) videoRef.current.currentTime = time;
                 }
             };
-            
-            const handleScrub = (e) => {
-                const rect = timelineContainer.value.getBoundingClientRect();
-                const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                seekTo(pos * duration.value);
-            };
-            
-            const stopDrag = () => {
-                dragging.value = null;
-                document.removeEventListener('mousemove', onDrag);
-                document.removeEventListener('mouseup', stopDrag);
+
+            const handleTimelineMouseUp = () => {
+                isDraggingRef.current = false;
+                draggingKeyframeIdRef.current = null;
+                draggingTrimRef.current = null;
             };
 
-            // --- Export Logic ---
-            const exportVideo = async () => {
-                if (!recordedUrl.value) return;
-                if (isExporting.value) return;
-                isExporting.value = true;
-                exportProgress.value = 0;
+            useEffect(() => {
+                window.addEventListener('mousemove', handleTimelineMove);
+                window.addEventListener('mouseup', handleTimelineMouseUp);
+                return () => {
+                    window.removeEventListener('mousemove', handleTimelineMove);
+                    window.removeEventListener('mouseup', handleTimelineMouseUp);
+                };
+            }, [duration, keyframes]);
 
-                let video = null;
+            return (
+                <div className="h-[calc(100vh-6rem)] flex flex-col gap-4 animate-fade-in">
+                    {/* Top Bar */}
+                    <div className="flex items-center justify-between bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm shrink-0">
+                        <div className="flex items-center gap-4">
+                            <Button variant="ghost" onClick={onBack} icon={ChevronLeft}>返回</Button>
+                            <div className="h-6 w-px bg-slate-200"></div>
+                            <div className="flex flex-col">
+                                <h2 className="font-bold text-slate-800">{recording.title}</h2>
+                                <span className="text-xs text-slate-500 font-mono">{recording.slug}</span>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 items-center">
+                             <div className="flex bg-slate-100 rounded-lg p-1 mr-4">
+                                <button onClick={() => setActiveTab('editor')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'editor' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>视频编辑</button>
+                                <button onClick={() => setActiveTab('notes')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'notes' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>备注文档</button>
+                            </div>
+                            <Button 
+                                onClick={() => {
+                                    setIsExporting(true);
+                                    onExport({ trim, keyframes, duration, url: recording.url, setProgress: setExportProgress })
+                                        .finally(() => setIsExporting(false));
+                                }} 
+                                disabled={isExporting} 
+                                icon={Download}
+                                className={isExporting ? "opacity-80 cursor-wait" : ""}
+                            >
+                                {isExporting ? `导出中 ${Math.round(exportProgress)}%` : '导出 MP4'}
+                            </Button>
+                        </div>
+                    </div>
 
+                    {activeTab === 'editor' ? (
+                        <div className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
+                            {/* Main Preview Area */}
+                            <div className="lg:col-span-2 flex flex-col gap-4 h-full min-h-0">
+                                <div className="flex-grow bg-slate-950 rounded-xl overflow-hidden relative flex items-center justify-center border border-slate-800 shadow-inner group min-h-0">
+                                    <video 
+                                        ref={videoRef}
+                                        src={recording.url}
+                                        className="max-w-full max-h-full object-contain"
+                                        style={{ transform: `scale(${currentTransform.scale}) translate(${currentTransform.x}%, ${currentTransform.y}%)`, transition: isPlaying ? 'none' : 'transform 0.1s' }}
+                                        onLoadedMetadata={e => setDuration(e.target.duration)}
+                                        onTimeUpdate={handleTimeUpdate}
+                                        onEnded={() => setIsPlaying(false)}
+                                    />
+                                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-slate-900/80 backdrop-blur text-white px-6 py-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={togglePlay}><Icon icon={isPlaying ? Pause : Play} /></button>
+                                        <span className="font-mono text-sm">{formatTime(currentTime)} / {formatTime(duration)}</span>
+                                    </div>
+                                </div>
+                                
+                                {/* Timeline */}
+                                <div className="bg-white p-4 rounded-xl border border-slate-200 h-28 relative select-none shrink-0"
+                                     ref={timelineRef}
+                                     onMouseDown={handleTimelineMouseDown}
+                                     >
+                                    <div className="absolute inset-x-6 top-1/2 h-2 bg-slate-100 rounded-full overflow-visible">
+                                        {/* Trim Masks */}
+                                        <div className="absolute inset-y-0 left-0 bg-slate-300/50 z-10 rounded-l-full pointer-events-none" style={{ width: `${(trim.start/duration)*100}%` }}></div>
+                                        <div className="absolute inset-y-0 right-0 bg-slate-300/50 z-10 rounded-r-full pointer-events-none" style={{ left: `${(trim.end/duration)*100}%` }}></div>
+
+                                        {/* Trim Handles */}
+                                        <div 
+                                             className="absolute top-1/2 h-8 w-4 bg-white shadow-sm border border-slate-300 rounded-l-md cursor-ew-resize z-30 flex items-center justify-center group hover:border-blue-500 transition-colors"
+                                             style={{ left: `${(trim.start/duration)*100}%`, transform: 'translate(-100%, -50%)' }}
+                                             onMouseDown={(e) => handleTimelineMouseDown(e, 'start')}
+                                             title={`开始: ${formatTime(trim.start)}`}
+                                        >
+                                            <div className="w-1 h-3 bg-slate-300 rounded-full group-hover:bg-blue-500"></div>
+                                        </div>
+                                        <div 
+                                             className="absolute top-1/2 h-8 w-4 bg-white shadow-sm border border-slate-300 rounded-r-md cursor-ew-resize z-30 flex items-center justify-center group hover:border-blue-500 transition-colors"
+                                             style={{ left: `${(trim.end/duration)*100}%`, transform: 'translate(0, -50%)' }}
+                                             onMouseDown={(e) => handleTimelineMouseDown(e, 'end')}
+                                             title={`结束: ${formatTime(trim.end)}`}
+                                        >
+                                            <div className="w-1 h-3 bg-slate-300 rounded-full group-hover:bg-blue-500"></div>
+                                        </div>
+
+                                        <div className="h-full bg-slate-900/10 rounded-full" style={{ width: `${(currentTime/duration)*100}%` }}></div>
+                                        
+                                        {/* Playhead */}
+                                        <div className="absolute top-1/2 w-4 h-4 bg-white border-2 border-red-500 rounded-full -translate-y-1/2 cursor-grab active:cursor-grabbing z-20" 
+                                             style={{ left: `calc(${(currentTime/duration)*100}% - 8px)` }}>
+                                             <div className="absolute top-full left-1/2 w-px h-8 bg-red-500/50 -translate-x-1/2 pointer-events-none"></div>
+                                        </div>
+
+                                        {/* Keyframe Dots */}
+                                        {keyframes.map(kf => (
+                                            <div key={kf.id} 
+                                                 className={`absolute top-1/2 w-3 h-3 rounded-full -translate-y-1/2 -ml-1.5 cursor-pointer z-10 transition-transform hover:scale-150 ${selectedKeyframeId === kf.id ? 'bg-blue-600 ring-2 ring-blue-200' : 'bg-blue-400'}`}
+                                                 style={{ left: `${(kf.time/duration)*100}%` }}
+                                                 onMouseDown={(e) => { 
+                                                     e.stopPropagation(); 
+                                                     setSelectedKeyframeId(kf.id); 
+                                                     draggingKeyframeIdRef.current = kf.id;
+                                                     videoRef.current.currentTime = kf.time; 
+                                                 }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="absolute bottom-2 left-6 right-6 flex justify-between text-[10px] text-slate-400 font-mono pointer-events-none">
+                                        <span>00:00</span>
+                                        <span>{formatTime(duration)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Properties Panel */}
+                            <Card title="关键帧属性" className="h-full">
+                                <div className="space-y-6">
+                                    <Button onClick={addKeyframe} variant="secondary" className="w-full" icon={Plus}>在此处添加关键帧</Button>
+                                    
+                                    {selectedKeyframe ? (
+                                        <div className="space-y-4 animate-fade-in bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm font-medium text-blue-600">时间点: {formatTime(selectedKeyframe.time)}</span>
+                                                <button onClick={() => deleteKeyframe(selectedKeyframe.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Icon icon={Trash2} size={16}/></button>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <div><label className="text-xs text-slate-500">缩放 (x{selectedKeyframe.scale.toFixed(1)})</label><input type="range" min="1" max="3" step="0.1" value={selectedKeyframe.scale} onChange={e => updateKeyframe(selectedKeyframe.id, {scale: parseFloat(e.target.value)})} className="w-full"/></div>
+                                                <div><label className="text-xs text-slate-500">X 偏移</label><input type="range" min="-50" max="50" value={selectedKeyframe.x} onChange={e => updateKeyframe(selectedKeyframe.id, {x: parseFloat(e.target.value)})} className="w-full"/></div>
+                                                <div><label className="text-xs text-slate-500">Y 偏移</label><input type="range" min="-50" max="50" value={selectedKeyframe.y} onChange={e => updateKeyframe(selectedKeyframe.id, {y: parseFloat(e.target.value)})} className="w-full"/></div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+                                            <Icon icon={Settings} size={32} className="mb-2 opacity-50"/>
+                                            <p className="text-sm">选择或添加关键帧以编辑动画</p>
+                                        </div>
+                                    )}
+
+                                    <div className="border-t border-slate-100 pt-4">
+                                        <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">关键帧列表</h4>
+                                        <div className="space-y-1 max-h-[300px] overflow-y-auto pr-2">
+                                            {keyframes.map(kf => (
+                                                <div key={kf.id} onClick={() => { setSelectedKeyframeId(kf.id); if(videoRef.current) videoRef.current.currentTime = kf.time; }}
+                                                     className={`flex items-center p-2 rounded-lg text-xs cursor-pointer transition-colors ${selectedKeyframeId === kf.id ? 'bg-slate-100 text-slate-900 font-bold border border-slate-200' : 'text-slate-500 hover:bg-slate-50 border border-transparent'}`}>
+                                                    <span className="font-mono">{formatTime(kf.time)}</span>
+                                                    <div className="ml-auto flex items-center gap-2">
+                                                        <span className="bg-slate-200 px-1.5 rounded text-[10px]">x{kf.scale}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {keyframes.length === 0 && <div className="text-xs text-slate-300 text-center py-2">无关键帧</div>}
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
+                    ) : (
+                        <div className="flex-grow bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                             <ByteMDEditor value={markdown} onChange={setMarkdown} />
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [view, setView] = useState('dashboard');
+            const [isSetupOpen, setIsSetupOpen] = useState(false);
+            const [isRecording, setIsRecording] = useState(false);
+            const [isStarting, setIsStarting] = useState(false);
+            
+            // Mock Data
+            const [recordings, setRecordings] = useState([]);
+            const [activeRecording, setActiveRecording] = useState(null);
+
+            // Config State
+            const [config, setConfig] = useState({
+                micEnabled: true, systemAudioEnabled: true, micVolume: 1.0, resolution: '1080p', frameRate: '30'
+            });
+
+            // Recording Logic
+            const mediaRecorderRef = useRef(null);
+            const audioContextRef = useRef(null);
+            const streamRef = useRef(null);
+            const timerRef = useRef(null);
+            const [recordingDuration, setRecordingDuration] = useState('00:00');
+
+            const startRecording = async () => {
+                if (isRecording || isStarting) return;
+                setIsStarting(true);
                 try {
-                    // Create offline video element for processing
-                    video = document.createElement('video');
-                    video.src = recordedUrl.value;
-                    video.muted = true;
-                    video.crossOrigin = "anonymous";
-                    // Wait for metadata to be loaded
-                    await new Promise((resolve, reject) => {
-                        video.onloadedmetadata = resolve;
-                        video.onerror = () => reject(new Error("Video load error"));
-                        // Timeout safety
-                        setTimeout(() => reject(new Error("Video load timeout")), 5000);
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    audioContextRef.current = audioCtx;
+                    
+                    const displayStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: { frameRate: parseInt(config.frameRate) },
+                        audio: config.systemAudioEnabled
                     });
                     
-                    // 1. Decode Audio First to get params
-                    const audioCtx = new AudioContext();
-                    const audioBlob = await fetch(recordedUrl.value).then(r => r.blob());
-                    const arrayBuffer = await audioBlob.arrayBuffer();
-                    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-                    
-                    // 2. Configure Video Params
-                    let width = video.videoWidth;
-                    let height = video.videoHeight;
-                    // Ensure even dimensions (required by many codecs)
-                    if (width % 2 !== 0) width -= 1;
-                    if (height % 2 !== 0) height -= 1;
-                    
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
+                    displayStream.getVideoTracks()[0].onended = stopRecording;
 
-                    // Dynamic AVC Level Selection based on resolution
-                    // Level 3.1 limit: 921,600 pixels
-                    // Level 4.0 limit: 2,073,600 pixels
-                    // Level 5.1 limit: 36,864,000 pixels
-                    let videoCodec = 'avc1.4d001f'; // Default Level 3.1
-                    const pixelCount = width * height;
-                    
-                    if (pixelCount > 2073600) { 
-                         videoCodec = 'avc1.4d0033'; // Level 5.1
-                    } else if (pixelCount > 921600) { 
-                         videoCodec = 'avc1.4d0028'; // Level 4.0
+                    const dest = audioCtx.createMediaStreamDestination();
+                    const masterGain = audioCtx.createGain();
+                    masterGain.connect(dest);
+
+                    if (config.systemAudioEnabled && displayStream.getAudioTracks().length > 0) {
+                        const sysSource = audioCtx.createMediaStreamSource(displayStream);
+                        sysSource.connect(masterGain);
                     }
-                    console.log(`Exporting: ${width}x${height}, Codec: ${videoCodec}`);
 
-                    // 3. Setup Muxer
+                    if (config.micEnabled) {
+                        try {
+                            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                            const micSource = audioCtx.createMediaStreamSource(micStream);
+                            const micGain = audioCtx.createGain();
+                            micGain.gain.value = config.micVolume;
+                            micSource.connect(micGain).connect(masterGain);
+                            streamRef.current = new MediaStream([...displayStream.getTracks(), ...micStream.getTracks()]);
+                        } catch (e) {
+                            console.warn("Mic error", e);
+                            streamRef.current = displayStream;
+                        }
+                    } else {
+                        streamRef.current = displayStream;
+                    }
+
+                    const finalStream = new MediaStream([
+                        ...displayStream.getVideoTracks(),
+                        ...dest.stream.getAudioTracks()
+                    ]);
+
+                    const recorder = new MediaRecorder(finalStream, {
+                        mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'
+                    });
+
+                    const chunks = [];
+                    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+                    recorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: 'video/webm' });
+                        const url = URL.createObjectURL(blob);
+                        const newRec = {
+                            id: Date.now(),
+                            title: `未命名录屏 ${recordings.length + 1}`,
+                            slug: `/recordings/untitled-${Date.now().toString().slice(-4)}`,
+                            date: new Date().toLocaleDateString(),
+                            duration: recordingDuration,
+                            status: 'draft',
+                            url: url,
+                            blob: blob,
+                            notes: ''
+                        };
+                        setRecordings(prev => [newRec, ...prev]);
+                        setActiveRecording(newRec);
+                        setIsRecording(false);
+                        setIsSetupOpen(false);
+                        setView('editor');
+                        if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+                        if (audioContextRef.current) audioContextRef.current.close();
+                        if (timerRef.current) clearInterval(timerRef.current);
+                    };
+
+                    recorder.start();
+                    mediaRecorderRef.current = recorder;
+                    setIsRecording(true);
+                    setIsSetupOpen(false);
+                    
+                    const startTime = Date.now();
+                    timerRef.current = setInterval(() => {
+                        const diff = Math.floor((Date.now() - startTime) / 1000);
+                        const m = Math.floor(diff / 60).toString().padStart(2, '0');
+                        const s = (diff % 60).toString().padStart(2, '0');
+                        setRecordingDuration(`${m}:${s}`);
+                    }, 1000);
+
+                } catch (err) {
+                    console.error(err);
+                    alert("启动录制失败: " + err.message);
+                } finally {
+                    setIsStarting(false);
+                }
+            };
+
+            const stopRecording = () => {
+                if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                    mediaRecorderRef.current.stop();
+                }
+            };
+
+            const handleExport = async ({ trim, keyframes, duration, url, setProgress }) => {
+                if (!url) return;
+                setProgress(0);
+                
+                try {
+                    const video = document.createElement('video');
+                    video.src = url;
+                    video.muted = true;
+                    await new Promise(r => { video.onloadedmetadata = r; });
+                    
+                    const audioCtx = new AudioContext();
+                    const ab = await (await fetch(url)).arrayBuffer();
+                    const audioBuffer = await audioCtx.decodeAudioData(ab);
+
+                    const width = video.videoWidth % 2 === 0 ? video.videoWidth : video.videoWidth - 1;
+                    const height = video.videoHeight % 2 === 0 ? video.videoHeight : video.videoHeight - 1;
+                    
+                    // Fix Mp4Muxer reference
+                    const Mp4Muxer = window.Mp4Muxer;
+                    if (!Mp4Muxer) throw new Error("Mp4Muxer not loaded");
+
                     const muxer = new Mp4Muxer.Muxer({
                         target: new Mp4Muxer.ArrayBufferTarget(),
-                        video: {
-                            codec: 'avc',
-                            width,
-                            height
-                        },
-                        audio: {
-                            codec: 'aac',
-                            numberOfChannels: audioBuffer.numberOfChannels,
-                            sampleRate: audioBuffer.sampleRate
-                        },
+                        video: { codec: 'avc', width, height },
+                        audio: { codec: 'aac', numberOfChannels: audioBuffer.numberOfChannels, sampleRate: audioBuffer.sampleRate },
                         fastStart: 'in-memory'
                     });
 
-                    // 4. Configure Encoders
+                    // Error handling wrapper
                     let encoderError = null;
+
                     const videoEncoder = new VideoEncoder({
                         output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-                        error: (e) => {
-                             console.error("VideoEncoder Error:", e);
-                             encoderError = e;
-                        }
+                        error: e => { console.error(e); encoderError = e; }
                     });
-
-                    // Try configuring video encoder, fallback if needed
-                    const videoConfig = {
-                        codec: videoCodec,
-                        width,
-                        height,
-                        bitrate: pixelCount > 2000000 ? 6_000_000 : 4_000_000,
-                        framerate: 30
-                    };
                     
-                    try {
-                        await videoEncoder.configure(videoConfig);
-                    } catch (configErr) {
-                        console.warn("Preferred codec failed, trying fallback (Baseline 5.1)...", configErr);
-                        try {
-                            await videoEncoder.configure({
-                                ...videoConfig,
-                                codec: 'avc1.420033' // Baseline Profile Level 5.1
-                            });
-                        } catch (fallbackErr) {
-                             console.warn("Baseline 5.1 failed, trying High 5.1...", fallbackErr);
-                             await videoEncoder.configure({
-                                ...videoConfig,
-                                codec: 'avc1.640033' // High Profile Level 5.1
-                            });
-                        }
-                    }
+                    // Use Level 5.1 (avc1.4d0033) to support up to 4K resolution
+                    videoEncoder.configure({
+                        codec: 'avc1.4d0033', 
+                        width, 
+                        height, 
+                        bitrate: 10_000_000, // Increased bitrate for high resolution
+                        framerate: 30
+                    });
 
                     const audioEncoder = new AudioEncoder({
                         output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
-                        error: e => {
-                            console.error("AudioEncoder Error:", e);
-                            encoderError = e;
-                        }
+                        error: e => { console.error(e); encoderError = e; }
+                    });
+                    audioEncoder.configure({
+                        codec: 'mp4a.40.2', numberOfChannels: audioBuffer.numberOfChannels, sampleRate: audioBuffer.sampleRate, bitrate: 128000
                     });
 
-                    await audioEncoder.configure({
-                        codec: 'mp4a.40.2',
-                        numberOfChannels: audioBuffer.numberOfChannels,
-                        sampleRate: audioBuffer.sampleRate,
-                        bitrate: 128_000
-                    });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
 
-                    // 5. Process Audio (Trimming + Encoding)
-                    const startSample = Math.floor(trimStart.value * audioBuffer.sampleRate);
-                    const endSample = Math.floor(trimEnd.value * audioBuffer.sampleRate);
+                    // Determine Trim Range
+                    const trimStart = trim?.start || 0;
+                    const trimEnd = (trim?.end && trim.end > 0) ? trim.end : duration;
+                    const exportDuration = Math.max(0, trimEnd - trimStart);
+
+                    if (exportDuration <= 0) throw new Error("无效的导出时长");
+
+                    // Process Audio
+                    const audioChunkSize = audioBuffer.sampleRate; // 1 second
+                    const numberOfChannels = audioBuffer.numberOfChannels;
+                    const startSample = Math.floor(trimStart * audioBuffer.sampleRate);
+                    const endSample = Math.floor(trimEnd * audioBuffer.sampleRate);
                     const totalSamples = endSample - startSample;
                     
-                    // Encode audio in chunks of 1 second
-                    const audioChunkSize = audioBuffer.sampleRate; 
                     for (let i = 0; i < totalSamples; i += audioChunkSize) {
                         if (encoderError) throw encoderError;
                         
-                        const chunkLen = Math.min(audioChunkSize, totalSamples - i);
-                        const planarData = new Float32Array(chunkLen * audioBuffer.numberOfChannels);
+                        const currentSampleIndex = startSample + i;
+                        const size = Math.min(audioChunkSize, totalSamples - i);
+                        const data = new Float32Array(size * numberOfChannels);
                         
-                        for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
-                            const channelData = audioBuffer.getChannelData(ch);
-                            const sliceStart = startSample + i;
-                            if (sliceStart < channelData.length) {
-                                const end = Math.min(sliceStart + chunkLen, channelData.length);
-                                planarData.set(channelData.slice(sliceStart, end), ch * chunkLen);
-                            }
+                        let offset = 0;
+                        for (let ch = 0; ch < numberOfChannels; ch++) {
+                            data.set(audioBuffer.getChannelData(ch).subarray(currentSampleIndex, currentSampleIndex + size), offset);
+                            offset += size;
                         }
 
-                        const timestamp = (i / audioBuffer.sampleRate) * 1_000_000;
                         const audioData = new AudioData({
-                            format: 'f32-planar',
+                            timestamp: (i / audioBuffer.sampleRate) * 1e6, // Timestamp starts from 0
+                            numberOfChannels: numberOfChannels,
                             sampleRate: audioBuffer.sampleRate,
-                            numberOfFrames: chunkLen,
-                            numberOfChannels: audioBuffer.numberOfChannels,
-                            timestamp: timestamp,
-                            data: planarData
+                            numberOfFrames: size,
+                            format: 'f32-planar',
+                            data: data
                         });
-                        
                         audioEncoder.encode(audioData);
                         audioData.close();
                     }
 
-                    // 6. Process Video (Trimming + Encoding)
+                    // Process Video
                     const fps = 30;
-                    const frameDuration = 1 / fps;
-                    let currentTimePos = trimStart.value;
-                    const startTime = trimStart.value;
+                    const totalFrames = Math.floor(exportDuration * fps);
                     
-                    // Initial seek
-                    video.currentTime = currentTimePos;
-                    await new Promise(resolve => {
-                        const onSeeked = () => { video.removeEventListener('seeked', onSeeked); resolve(); };
-                        video.addEventListener('seeked', onSeeked, { once: true });
-                    });
+                    for (let i = 0; i < totalFrames; i++) {
+                        if (encoderError) throw encoderError;
 
-                    while (currentTimePos < trimEnd.value) {
-                         if (!isExporting.value || encoderError) break;
-                         if (videoEncoder.state !== 'configured') throw new Error("VideoEncoder closed or failed");
+                        const timeRelativeToStart = i / fps;
+                        const actualTime = trimStart + timeRelativeToStart;
 
-                        // Update Progress
-                        exportProgress.value = Math.round(((currentTimePos - startTime) / (trimEnd.value - startTime)) * 100);
-                        await nextTick(); 
+                        video.currentTime = actualTime;
+                        await new Promise(r => { video.onseeked = r; });
+                        
+                        // Apply transforms
+                        let scale = 1, tx = 0, ty = 0;
+                        if (keyframes.length > 0) {
+                             const sorted = keyframes;
+                             let prev = sorted[0], next = sorted[sorted.length-1];
+                             if (actualTime > sorted[0].time && actualTime < sorted[sorted.length-1].time) {
+                                for(let k=0; k<sorted.length-1; k++) {
+                                    if (actualTime >= sorted[k].time && actualTime < sorted[k+1].time) {
+                                        prev = sorted[k]; next = sorted[k+1]; break;
+                                    }
+                                }
+                             }
+                             if (actualTime <= sorted[0].time) { prev=sorted[0]; next=sorted[0]; }
+                             if (actualTime >= sorted[sorted.length-1].time) { prev=sorted[sorted.length-1]; next=sorted[sorted.length-1]; }
 
-                        // Draw frame to canvas
+                             const ratio = (next.time === prev.time) ? 0 : (actualTime - prev.time) / (next.time - prev.time);
+                             scale = prev.scale + (next.scale - prev.scale) * ratio;
+                             tx = prev.x + (next.x - prev.x) * ratio;
+                             ty = prev.y + (next.y - prev.y) * ratio;
+                        }
+
                         ctx.fillStyle = '#000';
                         ctx.fillRect(0, 0, width, height);
                         
-                        // Apply transforms (crop/scale/position)
-                        const transform = getTransformAtTime(currentTimePos);
                         ctx.save();
-                        ctx.translate(width / 2, height / 2);
-                        ctx.scale(transform.scale, transform.scale);
-                        ctx.translate((transform.x / 100) * width, (transform.y / 100) * height);
-                        ctx.translate(-width / 2, -height / 2);
+                        ctx.translate(width/2, height/2);
+                        ctx.scale(scale, scale);
+                        ctx.translate(tx/100 * width, ty/100 * height);
+                        ctx.translate(-width/2, -height/2);
                         ctx.drawImage(video, 0, 0, width, height);
                         ctx.restore();
 
-                        // Encode frame
-                        const timestamp = (currentTimePos - startTime) * 1_000_000; 
-                        const frame = new VideoFrame(canvas, { timestamp });
+                        const frame = new VideoFrame(canvas, { timestamp: timeRelativeToStart * 1e6 });
+                        videoEncoder.encode(frame, { keyFrame: i % 30 === 0 });
+                        frame.close();
                         
-                        try {
-                            const keyFrame = (Math.round((currentTimePos - startTime) * fps) % 30) === 0;
-                            videoEncoder.encode(frame, { keyFrame });
-                        } finally {
-                            frame.close();
-                        }
-
-                        // Advance time
-                        currentTimePos += frameDuration;
-                        video.currentTime = currentTimePos;
-                        
-                        // Robust seek wait with timeout
-                        await new Promise((resolve) => {
-                             let resolved = false;
-                             const onSeeked = () => {
-                                 if (resolved) return;
-                                 resolved = true;
-                                 resolve();
-                             };
-                             video.addEventListener('seeked', onSeeked, { once: true });
-                             
-                             // Fallback if seek event doesn't fire (browser quirk)
-                             setTimeout(() => { 
-                                 if (!resolved) { 
-                                     resolved = true; 
-                                     video.removeEventListener('seeked', onSeeked);
-                                     resolve(); 
-                                 } 
-                             }, 500);
-                        });
+                        setProgress(Math.round((i / totalFrames) * 90));
+                        await new Promise(r => setTimeout(r, 0)); // yield
                     }
 
-                    if (encoderError) throw encoderError;
+                    await videoEncoder.flush();
+                    await audioEncoder.flush();
+                    muxer.finalize();
                     
-                    // Finalize
-                    if (isExporting.value) {
-                        if (videoEncoder.state === 'configured') await videoEncoder.flush();
-                        if (audioEncoder.state === 'configured') await audioEncoder.flush();
-                        muxer.finalize();
-    
-                        const { buffer } = muxer.target;
-                        const blob = new Blob([buffer], { type: 'video/mp4' });
-                        const url = URL.createObjectURL(blob);
-                        
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `video_${Date.now()}.mp4`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                    }
+                    const buffer = muxer.target.buffer;
+                    const blob = new Blob([buffer], { type: 'video/mp4' });
+                    const downloadUrl = URL.createObjectURL(blob);
                     
-                } catch (e) {
-                    console.error("Export failed:", e);
-                    alert("导出失败: " + (e.message || e));
-                } finally {
-                    isExporting.value = false;
-                    exportProgress.value = 0;
-                    // Cleanup
-                    if (video) {
-                        video.removeAttribute('src');
-                        video.load();
-                    }
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = `exported-video-${Date.now()}.mp4`;
+                    a.click();
+                    
+                    setProgress(100);
+
+                } catch (err) {
+                    console.error(err);
+                    alert("导出失败: " + err.message);
                 }
             };
 
-            return {
-                isDark, toggleTheme,
-                currentStep, config,
-                startRecording, stopRecording, reset,
-                formattedDuration, recordedUrl,
-                previewVideo, onVideoLoaded, onTimeUpdate, togglePlay, isPlaying,
-                currentTime, duration,
-                trimStart, trimEnd,
-                timelineContainer, startDrag, startScrubbing,
-                keyframes, addKeyframe, removeKeyframe, sortedKeyframes, currentKeyframe, isCurrentKeyframe, seekTo,
-                formatTime,
-                exportVideo, isExporting, exportProgress
-            };
-        }
-    }).mount('#app');
-</script>
+            return (
+                <div className="min-h-screen font-sans text-slate-900 bg-gray-50 selection:bg-slate-900 selection:text-white">
+                    {view === 'dashboard' && (
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                            <div className="mb-8">
+                                <h1 className="text-2xl font-bold tracking-tight text-slate-900">我的录屏</h1>
+                                <p className="text-slate-500 mt-1">管理和编辑您的所有录屏文件</p>
+                            </div>
+                            <DashboardView 
+                                recordings={recordings} 
+                                onNewRecording={() => setIsSetupOpen(true)}
+                                onEdit={(rec) => { setActiveRecording(rec); setView('editor'); }}
+                                onDelete={(id) => setRecordings(prev => prev.filter(r => r.id !== id))}
+                                onPreview={(rec) => { setActiveRecording(rec); setView('editor'); }}
+                                isRecording={isRecording}
+                            />
+                        </div>
+                    )}
+
+                    {view === 'editor' && activeRecording && (
+                        <div className="max-w-[1920px] mx-auto px-4 py-4 h-screen overflow-hidden">
+                            <EditorView 
+                                recording={activeRecording} 
+                                onBack={() => { setView('dashboard'); setActiveRecording(null); }}
+                                onSave={() => { setView('dashboard'); }}
+                                onExport={handleExport}
+                            />
+                        </div>
+                    )}
+
+                    {/* Setup Modal */}
+                    <Modal isOpen={isSetupOpen} onClose={() => setIsSetupOpen(false)} title="开始新的录制">
+                        <div className="space-y-6">
+                            <div className="space-y-4">
+                                <Toggle label="启用麦克风" checked={config.micEnabled} onChange={v => setConfig({...config, micEnabled: v})} />
+                                {config.micEnabled && (
+                                    <div>
+                                        <label className="text-xs font-semibold text-slate-500 uppercase mb-1 block">麦克风音量</label>
+                                        <input type="range" min="0" max="2" step="0.1" value={config.micVolume} onChange={e => setConfig({...config, micVolume: parseFloat(e.target.value)})} className="w-full" />
+                                    </div>
+                                )}
+                                <Toggle label="录制系统声音" checked={config.systemAudioEnabled} onChange={v => setConfig({...config, systemAudioEnabled: v})} />
+                                <Select label="分辨率" value={config.resolution} onChange={v => setConfig({...config, resolution: v})} options={[
+                                    {value: '1080p', label: '1080p (FHD)'},
+                                    {value: '720p', label: '720p (HD)'},
+                                    {value: '4k', label: '4k (UHD)'}
+                                ]} />
+                                 <Select label="帧率" value={config.frameRate} onChange={v => setConfig({...config, frameRate: v})} options={[
+                                    {value: '30', label: '30 FPS'},
+                                    {value: '60', label: '60 FPS'}
+                                ]} />
+                            </div>
+                            
+                            <div className="pt-4 flex justify-end gap-3">
+                                <Button variant="ghost" onClick={() => setIsSetupOpen(false)} disabled={isStarting}>取消</Button>
+                                <Button onClick={startRecording} icon={Video} className="bg-slate-900 text-white hover:bg-slate-800" disabled={isStarting}>
+                                    {isStarting ? '启动中...' : '开始录制'}
+                                </Button>
+                            </div>
+                        </div>
+                    </Modal>
+
+                    {/* Recording Overlay */}
+                    {isRecording && (
+                         <div className="fixed bottom-8 right-8 bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-6 animate-slide-up z-50 border border-slate-700">
+                            <div className="flex items-center gap-3">
+                                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                                <span className="font-mono font-medium text-lg">{recordingDuration}</span>
+                            </div>
+                            <div className="h-8 w-px bg-slate-700"></div>
+                            <button onClick={stopRecording} className="bg-white text-slate-900 px-4 py-2 rounded-lg font-bold hover:bg-slate-100 transition-colors shadow-lg">
+                                停止录制
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
