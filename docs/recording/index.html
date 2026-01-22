@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网页在线录屏工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Animation Classes */
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.3s ease;
+        }
+        .fade-enter-from, .fade-leave-to {
+            opacity: 0;
+        }
+        
+        .slide-up-enter-active, .slide-up-leave-active {
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .slide-up-enter-from, .slide-up-leave-to {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        /* Range Input Styling */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+        }
+        input[type=range]:focus {
+            outline: none; 
+        }
+        
+        /* Timeline Markers */
+        .timeline-marker {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #ef4444;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-300 min-h-screen flex flex-col">
+
+<div id="app" class="flex flex-col flex-grow h-screen overflow-hidden">
+    <!-- Navbar -->
+    <nav class="border-b border-gray-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-purple-600 dark:from-brand-400 dark:to-purple-400">
+                        网页在线录屏工具
+                    </span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button @click="toggleTheme" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-500 dark:text-slate-400">
+                        <i :class="isDark ? 'fas fa-sun' : 'fas fa-moon'"></i>
+                    </button>
+                    <a href="https://github.com/sky22333/tools" target="_blank" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-500 dark:text-slate-400">
+                        <i class="fab fa-github text-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow relative overflow-hidden flex flex-col">
+        
+        <!-- View: Setup -->
+        <transition name="slide-up" mode="out-in">
+            <div v-if="currentStep === 'setup'" class="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 max-w-2xl mx-auto">
+                <div class="space-y-2">
+                    <h1 class="text-4xl md:text-5xl font-bold tracking-tight">
+                        专业的网页录屏工具
+                    </h1>
+                    <p class="text-lg text-gray-600 dark:text-slate-400">
+                        支持音频混音、剪辑、关键帧缩放，导出 MP4
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                    <!-- Audio Settings -->
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 text-left hover:shadow-md transition-shadow">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
+                                <i class="fas fa-microphone"></i>
+                            </div>
+                            <h3 class="font-semibold">音频设置</h3>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">麦克风</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" v-model="config.micEnabled" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+                                </label>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">系统声音</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" v-model="config.systemAudioEnabled" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+                                </label>
+                            </div>
+
+                             <div v-if="config.micEnabled" class="pt-2">
+                                <label class="text-xs text-gray-500 mb-1 block">麦克风音量</label>
+                                <input type="range" v-model.number="config.micVolume" min="0" max="2" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-brand-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video Settings -->
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 text-left hover:shadow-md transition-shadow">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg">
+                                <i class="fas fa-desktop"></i>
+                            </div>
+                            <h3 class="font-semibold">录制选项</h3>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-sm block mb-2">分辨率偏好</label>
+                                <select v-model="config.resolution" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                                    <option value="1080p">1080p (Full HD)</option>
+                                    <option value="720p">720p (HD)</option>
+                                    <option value="original">原始分辨率</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-sm block mb-2">帧率</label>
+                                <select v-model="config.frameRate" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                                    <option value="30">30 FPS</option>
+                                    <option value="60">60 FPS</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button @click="startRecording" class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-brand-600 font-pj rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600 hover:bg-brand-700 hover:scale-105 shadow-lg shadow-brand-500/30">
+                    <i class="fas fa-circle text-red-400 mr-2 animate-pulse"></i> 开始录制
+                </button>
+            </div>
+        </transition>
+
+        <!-- View: Recording -->
+        <transition name="fade">
+            <div v-if="currentStep === 'recording'" class="flex flex-col items-center justify-center h-full bg-slate-900 text-white relative">
+                <div class="absolute inset-0 overflow-hidden opacity-20 pointer-events-none flex items-center justify-center">
+                     <canvas ref="audioVisualizer" class="w-full h-64"></canvas>
+                </div>
+
+                <div class="z-10 text-center space-y-6">
+                    <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-red-500/20 animate-pulse">
+                        <div class="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.6)]">
+                            <span class="text-2xl font-mono font-bold">{{ formattedDuration }}</span>
+                        </div>
+                    </div>
+                    
+                    <h2 class="text-2xl font-semibold">正在录制...</h2>
+                    <p class="text-slate-400">请保持此标签页打开，或最小化</p>
+
+                    <div class="flex gap-4 justify-center pt-8">
+                        <button @click="stopRecording" class="px-8 py-3 bg-white text-slate-900 rounded-full font-bold hover:bg-gray-100 transition-colors flex items-center gap-2">
+                            <i class="fas fa-stop"></i> 结束录制
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- View: Editor -->
+        <transition name="slide-up">
+            <div v-if="currentStep === 'editor'" class="flex flex-col h-full bg-gray-100 dark:bg-slate-950">
+                <!-- Toolbar -->
+                <div class="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 p-2 flex items-center justify-between px-4">
+                    <div class="flex items-center gap-2">
+                        <button @click="reset" class="px-3 py-1.5 text-sm text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md">
+                            <i class="fas fa-arrow-left mr-1"></i> 重录
+                        </button>
+                        <div class="h-6 w-px bg-gray-300 dark:bg-slate-700 mx-2"></div>
+                        <span class="text-sm font-medium">编辑模式</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="exportVideo" :disabled="isExporting" class="px-4 py-1.5 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2">
+                            <i v-if="!isExporting" class="fas fa-download"></i>
+                            <i v-else class="fas fa-spinner fa-spin"></i>
+                            {{ isExporting ? `导出中 ${exportProgress}%` : '导出 MP4' }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Editor Area -->
+                <div class="flex-grow flex flex-col md:flex-row overflow-hidden">
+                    <!-- Video Preview -->
+                    <div class="flex-grow bg-black relative flex items-center justify-center p-4">
+                        <video 
+                            ref="previewVideo" 
+                            class="max-h-full max-w-full shadow-2xl" 
+                            :src="recordedUrl" 
+                            @loadedmetadata="onVideoLoaded"
+                            @timeupdate="onTimeUpdate"
+                            @click="togglePlay"
+                        ></video>
+                        
+                        <!-- Overlay Controls -->
+                        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md rounded-full px-4 py-2 flex items-center gap-4 text-white opacity-0 hover:opacity-100 transition-opacity duration-300">
+                            <button @click="togglePlay" class="hover:text-brand-400">
+                                <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
+                            </button>
+                            <span class="text-xs font-mono">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Inspector / Keyframes Sidebar -->
+                    <div class="w-full md:w-80 bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-800 flex flex-col z-20 shadow-xl">
+                        <div class="p-4 border-b border-gray-200 dark:border-slate-800">
+                            <h3 class="font-bold text-sm uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-4">关键帧动画</h3>
+                            
+                            <div class="space-y-4">
+                                <button @click="addKeyframe" class="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-dashed border-gray-300 dark:border-slate-600">
+                                    <i class="fas fa-plus mr-1"></i> 添加当前帧状态
+                                </button>
+
+                                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 space-y-3" v-if="currentKeyframe">
+                                    <div class="text-xs font-mono text-gray-500 flex justify-between">
+                                        <span>当前: {{ formatTime(currentTime) }}</span>
+                                        <button @click="removeKeyframe(currentKeyframe.id)" class="text-red-500 hover:text-red-600">删除</button>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs block mb-1">缩放 (Scale) x{{ currentKeyframe.scale.toFixed(2) }}</label>
+                                        <input type="range" v-model.number="currentKeyframe.scale" min="1" max="3" step="0.1" class="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-brand-500">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs block mb-1">X 偏移 ({{ currentKeyframe.x.toFixed(0) }}%)</label>
+                                        <input type="range" v-model.number="currentKeyframe.x" min="-50" max="50" step="1" class="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-brand-500">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs block mb-1">Y 偏移 ({{ currentKeyframe.y.toFixed(0) }}%)</label>
+                                        <input type="range" v-model.number="currentKeyframe.y" min="-50" max="50" step="1" class="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-brand-500">
+                                    </div>
+                                </div>
+                                <div v-else class="text-center text-sm text-gray-400 py-4">
+                                    移动时间轴选择位置
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-grow overflow-y-auto p-4 space-y-2">
+                             <div v-for="kf in sortedKeyframes" :key="kf.id" 
+                                  @click="seekTo(kf.time)"
+                                  class="flex items-center gap-2 p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-sm group"
+                                  :class="{'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800': isCurrentKeyframe(kf)}">
+                                <div class="w-2 h-2 rounded-full bg-brand-500"></div>
+                                <span class="font-mono text-xs">{{ formatTime(kf.time) }}</span>
+                                <span class="text-xs text-gray-500">x{{ kf.scale }}</span>
+                                <button @click.stop="removeKeyframe(kf.id)" class="ml-auto opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Bottom Bar -->
+                <div class="h-24 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 p-4 flex flex-col justify-center relative select-none">
+                    <!-- Trimmer Handles -->
+                    <div class="relative h-12 w-full flex items-center" ref="timelineContainer">
+                        <!-- Background Track -->
+                        <div class="absolute left-0 right-0 h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                             <!-- Progress Bar -->
+                             <div class="h-full bg-blue-400/30" :style="{ width: (currentTime / duration) * 100 + '%' }"></div>
+                        </div>
+                        
+                        <!-- Active Range Highlight -->
+                        <div class="absolute h-2 bg-brand-500 rounded-full opacity-50"
+                             :style="{ left: (trimStart / duration) * 100 + '%', right: (100 - (trimEnd / duration) * 100) + '%' }">
+                        </div>
+
+                        <!-- Scrubber Head -->
+                        <div class="absolute w-0.5 h-8 bg-black dark:bg-white z-20 cursor-pointer"
+                             :style="{ left: (currentTime / duration) * 100 + '%' }"
+                             @mousedown="startScrubbing">
+                             <div class="w-3 h-3 bg-black dark:bg-white rotate-45 -translate-x-1.5 -translate-y-1"></div>
+                        </div>
+
+                        <!-- Start Handle -->
+                        <div class="absolute h-8 w-4 bg-brand-600 rounded-l-md cursor-ew-resize z-10 flex items-center justify-center text-white text-[10px]"
+                             :style="{ left: (trimStart / duration) * 100 + '%' }"
+                             @mousedown="startDrag('start')">
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+
+                        <!-- End Handle -->
+                        <div class="absolute h-8 w-4 bg-brand-600 rounded-r-md cursor-ew-resize z-10 flex items-center justify-center text-white text-[10px] -translate-x-full"
+                             :style="{ left: (trimEnd / duration) * 100 + '%' }"
+                             @mousedown="startDrag('end')">
+                            <i class="fas fa-chevron-left"></i>
+                        </div>
+
+                        <!-- Keyframe Dots on Timeline -->
+                        <div v-for="kf in keyframes" :key="kf.id"
+                             class="absolute w-2 h-2 bg-yellow-400 rounded-full top-1/2 -translate-y-1/2 pointer-events-none z-0 border border-black/20"
+                             :style="{ left: (kf.time / duration) * 100 + '%' }">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between text-xs text-gray-500 mt-2 font-mono">
+                        <span>{{ formatTime(trimStart) }}</span>
+                        <span>{{ formatTime(trimEnd) }}</span>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+    </main>
+</div>
+
+<script type="module">
+    import * as Mp4Muxer from 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.0.0/+esm';
+    const { createApp, ref, computed, onMounted, onUnmounted, watch, nextTick } = Vue;
+
+    createApp({
+        setup() {
+            // State
+            const isDark = ref(false);
+            const currentStep = ref('setup'); // setup, recording, editor
+            const config = ref({
+                micEnabled: true,
+                systemAudioEnabled: true,
+                micVolume: 1.0,
+                resolution: '1080p',
+                frameRate: 30
+            });
+            
+            // Recording State
+            const recordingStartTime = ref(0);
+            const recordingDuration = ref(0);
+            const timerInterval = ref(null);
+            
+            // Editor State
+            const recordedUrl = ref('');
+            const recordedBlob = ref(null);
+            const isPlaying = ref(false);
+            const currentTime = ref(0);
+            const duration = ref(1); // avoid div by zero
+            const trimStart = ref(0);
+            const trimEnd = ref(1);
+            
+            // Keyframes: { id, time, scale, x, y }
+            const keyframes = ref([]);
+            
+            // Internal Media Objects
+            let mediaRecorder = null;
+            let audioContext = null;
+            let mediaStream = null;
+            let micStream = null;
+            let audioDest = null;
+            
+            // Refs
+            const previewVideo = ref(null);
+            const timelineContainer = ref(null);
+            const audioVisualizer = ref(null);
+            let animationFrameId = null;
+            let analyser = null;
+            let dataArray = null;
+
+            // Export State
+            const isExporting = ref(false);
+            const exportProgress = ref(0);
+
+            // Helpers
+            const toggleTheme = () => {
+                isDark.value = !isDark.value;
+                if (isDark.value) document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
+            };
+
+            const formatTime = (seconds) => {
+                const m = Math.floor(seconds / 60);
+                const s = Math.floor(seconds % 60);
+                const ms = Math.floor((seconds % 1) * 100);
+                return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+            };
+            
+            const formattedDuration = computed(() => formatTime(recordingDuration.value));
+
+            // --- Recording Logic ---
+
+            const startRecording = async () => {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const chunks = [];
+                    
+                    // 1. Get Display Media
+                    const displayMediaOptions = {
+                        video: {
+                            frameRate: parseInt(config.value.frameRate)
+                        },
+                        audio: config.value.systemAudioEnabled
+                    };
+                    
+                    mediaStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+                    
+                    // Stop if user cancels browser dialog
+                    mediaStream.getVideoTracks()[0].onended = stopRecording;
+
+                    // 2. Audio Mixing
+                    const dest = audioContext.createMediaStreamDestination();
+                    const masterGain = audioContext.createGain(); // Master Mix Bus
+                    masterGain.gain.value = 1.0;
+                    
+                    // Connect Master to Destination (for recording)
+                    masterGain.connect(dest);
+                    
+                    // Visualizer Setup
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 2048;
+                    // Connect Master to Analyser (for visualization)
+                    masterGain.connect(analyser);
+                    dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    
+                    // System Audio
+                    if (config.value.systemAudioEnabled && mediaStream.getAudioTracks().length > 0) {
+                        const sysSource = audioContext.createMediaStreamSource(mediaStream);
+                        const sysGain = audioContext.createGain();
+                        sysGain.gain.value = 1.0;
+                        sysSource.connect(sysGain).connect(masterGain);
+                    }
+                    
+                    // Mic Audio
+                    if (config.value.micEnabled) {
+                        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        const micSource = audioContext.createMediaStreamSource(micStream);
+                        const micGain = audioContext.createGain();
+                        micGain.gain.value = config.value.micVolume;
+                        micSource.connect(micGain).connect(masterGain);
+                    }
+
+                    // 3. Create Combined Stream
+                    // Use video from displayMedia and audio from mixed destination
+                    const tracks = [
+                        ...mediaStream.getVideoTracks(),
+                        ...dest.stream.getAudioTracks()
+                    ];
+                    const combinedStream = new MediaStream(tracks);
+                    
+                    // 4. Start Recorder
+                    mediaRecorder = new MediaRecorder(combinedStream, {
+                        mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'
+                    });
+                    
+                    mediaRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) chunks.push(e.data);
+                    };
+                    
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: 'video/webm' });
+                        recordedBlob.value = blob;
+                        recordedUrl.value = URL.createObjectURL(blob);
+                        currentStep.value = 'editor';
+                        cleanupStreams();
+                    };
+
+                    const draw = () => {
+                        if (currentStep.value !== 'recording') return;
+                        animationFrameId = requestAnimationFrame(draw);
+                        
+                        const canvas = audioVisualizer.value;
+                        if (!canvas) return;
+
+                        // Resize if needed
+                        if (canvas.width !== canvas.offsetWidth || canvas.height !== canvas.offsetHeight) {
+                            canvas.width = canvas.offsetWidth;
+                            canvas.height = canvas.offsetHeight;
+                        }
+                        const ctx = canvas.getContext('2d');
+                        const width = canvas.width;
+                        const height = canvas.height;
+
+                        ctx.clearRect(0, 0, width, height);
+                        analyser.getByteTimeDomainData(dataArray);
+
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = 'rgb(255, 255, 255)';
+                        ctx.beginPath();
+                        
+                        const sliceWidth = width * 1.0 / dataArray.length;
+                        let x = 0;
+                        
+                        for (let i = 0; i < dataArray.length; i++) {
+                            const v = dataArray[i] / 128.0;
+                            const y = v * height / 2;
+                            if (i === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                            x += sliceWidth;
+                        }
+                        ctx.stroke();
+                    };
+                    draw();
+                    
+                    mediaRecorder.start();
+
+                    currentStep.value = 'recording';
+                    recordingStartTime.value = Date.now();
+                    timerInterval.value = setInterval(() => {
+                        recordingDuration.value = (Date.now() - recordingStartTime.value) / 1000;
+                    }, 100);
+                    
+                } catch (err) {
+                    console.error("Recording error:", err);
+                    alert("无法开始录制: " + err.message);
+                }
+            };
+
+            const stopRecording = () => {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                if (timerInterval.value) clearInterval(timerInterval.value);
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            };
+
+            const cleanupStreams = () => {
+                if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+                if (micStream) micStream.getTracks().forEach(t => t.stop());
+                if (audioContext) audioContext.close();
+            };
+
+            const reset = () => {
+                currentStep.value = 'setup';
+                recordedUrl.value = '';
+                recordedBlob.value = null;
+                keyframes.value = [];
+            };
+
+            // --- Editor Logic ---
+            
+            const onVideoLoaded = () => {
+                if(previewVideo.value) {
+                    duration.value = previewVideo.value.duration;
+                    trimStart.value = 0;
+                    trimEnd.value = duration.value;
+                }
+            };
+            
+            const onTimeUpdate = () => {
+                if(previewVideo.value) {
+                    currentTime.value = previewVideo.value.currentTime;
+                    // Loop if trimming
+                    if (currentTime.value > trimEnd.value) {
+                        previewVideo.value.pause();
+                        isPlaying.value = false;
+                        previewVideo.value.currentTime = trimStart.value;
+                    }
+                }
+            };
+            
+            const togglePlay = () => {
+                if(!previewVideo.value) return;
+                if(previewVideo.value.paused) {
+                    if (currentTime.value >= trimEnd.value) {
+                        previewVideo.value.currentTime = trimStart.value;
+                    }
+                    previewVideo.value.play();
+                    isPlaying.value = true;
+                } else {
+                    previewVideo.value.pause();
+                    isPlaying.value = false;
+                }
+            };
+            
+            const seekTo = (time) => {
+                if(previewVideo.value) {
+                    previewVideo.value.currentTime = time;
+                }
+            };
+
+            // Keyframe Management
+            const addKeyframe = () => {
+                const kf = {
+                    id: Date.now(),
+                    time: currentTime.value,
+                    scale: 1,
+                    x: 0,
+                    y: 0
+                };
+                // Check if exists close by
+                const existing = keyframes.value.find(k => Math.abs(k.time - kf.time) < 0.1);
+                if(existing) {
+                    Object.assign(existing, kf);
+                } else {
+                    keyframes.value.push(kf);
+                }
+                keyframes.value.sort((a,b) => a.time - b.time);
+            };
+
+            const removeKeyframe = (id) => {
+                keyframes.value = keyframes.value.filter(k => k.id !== id);
+            };
+
+            const sortedKeyframes = computed(() => {
+                return [...keyframes.value].sort((a,b) => a.time - b.time);
+            });
+            
+            const currentKeyframe = computed(() => {
+                // Find the keyframe that is "active" or being edited near current time
+                return keyframes.value.find(k => Math.abs(k.time - currentTime.value) < 0.2);
+            });
+            
+            const isCurrentKeyframe = (kf) => {
+                return currentKeyframe.value && currentKeyframe.value.id === kf.id;
+            };
+
+            // Interpolation for Playback/Export
+            const getTransformAtTime = (t) => {
+                if (keyframes.value.length === 0) return { scale: 1, x: 0, y: 0 };
+                
+                // Find surrounding keyframes
+                const sorted = sortedKeyframes.value;
+                if (t <= sorted[0].time) return sorted[0];
+                if (t >= sorted[sorted.length - 1].time) return sorted[sorted.length - 1];
+                
+                let prev = sorted[0];
+                let next = sorted[sorted.length - 1];
+                
+                for (let i = 0; i < sorted.length - 1; i++) {
+                    if (t >= sorted[i].time && t < sorted[i+1].time) {
+                        prev = sorted[i];
+                        next = sorted[i+1];
+                        break;
+                    }
+                }
+                
+                const ratio = (t - prev.time) / (next.time - prev.time);
+                // Linear interpolation
+                return {
+                    scale: prev.scale + (next.scale - prev.scale) * ratio,
+                    x: prev.x + (next.x - prev.x) * ratio,
+                    y: prev.y + (next.y - prev.y) * ratio
+                };
+            };
+
+            // --- Timeline Interaction ---
+            const dragging = ref(null); // 'start', 'end', 'scrub'
+            
+            const startDrag = (type) => {
+                dragging.value = type;
+                document.addEventListener('mousemove', onDrag);
+                document.addEventListener('mouseup', stopDrag);
+            };
+            
+            const startScrubbing = (e) => {
+                dragging.value = 'scrub';
+                handleScrub(e);
+                document.addEventListener('mousemove', onDrag);
+                document.addEventListener('mouseup', stopDrag);
+            };
+            
+            const onDrag = (e) => {
+                if (!dragging.value || !timelineContainer.value) return;
+                
+                const rect = timelineContainer.value.getBoundingClientRect();
+                const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                const time = pos * duration.value;
+                
+                if (dragging.value === 'scrub') {
+                    seekTo(time);
+                } else if (dragging.value === 'start') {
+                    trimStart.value = Math.min(time, trimEnd.value - 0.5);
+                    seekTo(trimStart.value);
+                } else if (dragging.value === 'end') {
+                    trimEnd.value = Math.max(time, trimStart.value + 0.5);
+                    seekTo(trimEnd.value);
+                }
+            };
+            
+            const handleScrub = (e) => {
+                const rect = timelineContainer.value.getBoundingClientRect();
+                const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                seekTo(pos * duration.value);
+            };
+            
+            const stopDrag = () => {
+                dragging.value = null;
+                document.removeEventListener('mousemove', onDrag);
+                document.removeEventListener('mouseup', stopDrag);
+            };
+
+            // --- Export Logic ---
+            const exportVideo = async () => {
+                if (!recordedUrl.value) return;
+                if (isExporting.value) return;
+                isExporting.value = true;
+                exportProgress.value = 0;
+
+                let video = null;
+
+                try {
+                    // Create offline video element for processing
+                    video = document.createElement('video');
+                    video.src = recordedUrl.value;
+                    video.muted = true;
+                    video.crossOrigin = "anonymous";
+                    // Wait for metadata to be loaded
+                    await new Promise((resolve, reject) => {
+                        video.onloadedmetadata = resolve;
+                        video.onerror = () => reject(new Error("Video load error"));
+                        // Timeout safety
+                        setTimeout(() => reject(new Error("Video load timeout")), 5000);
+                    });
+                    
+                    // 1. Decode Audio First to get params
+                    const audioCtx = new AudioContext();
+                    const audioBlob = await fetch(recordedUrl.value).then(r => r.blob());
+                    const arrayBuffer = await audioBlob.arrayBuffer();
+                    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                    
+                    // 2. Configure Video Params
+                    let width = video.videoWidth;
+                    let height = video.videoHeight;
+                    // Ensure even dimensions (required by many codecs)
+                    if (width % 2 !== 0) width -= 1;
+                    if (height % 2 !== 0) height -= 1;
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
+
+                    // Dynamic AVC Level Selection based on resolution
+                    // Level 3.1 limit: 921,600 pixels
+                    // Level 4.0 limit: 2,073,600 pixels
+                    // Level 5.1 limit: 36,864,000 pixels
+                    let videoCodec = 'avc1.4d001f'; // Default Level 3.1
+                    const pixelCount = width * height;
+                    
+                    if (pixelCount > 2073600) { 
+                         videoCodec = 'avc1.4d0033'; // Level 5.1
+                    } else if (pixelCount > 921600) { 
+                         videoCodec = 'avc1.4d0028'; // Level 4.0
+                    }
+                    console.log(`Exporting: ${width}x${height}, Codec: ${videoCodec}`);
+
+                    // 3. Setup Muxer
+                    const muxer = new Mp4Muxer.Muxer({
+                        target: new Mp4Muxer.ArrayBufferTarget(),
+                        video: {
+                            codec: 'avc',
+                            width,
+                            height
+                        },
+                        audio: {
+                            codec: 'aac',
+                            numberOfChannels: audioBuffer.numberOfChannels,
+                            sampleRate: audioBuffer.sampleRate
+                        },
+                        fastStart: 'in-memory'
+                    });
+
+                    // 4. Configure Encoders
+                    let encoderError = null;
+                    const videoEncoder = new VideoEncoder({
+                        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+                        error: (e) => {
+                             console.error("VideoEncoder Error:", e);
+                             encoderError = e;
+                        }
+                    });
+
+                    // Try configuring video encoder, fallback if needed
+                    const videoConfig = {
+                        codec: videoCodec,
+                        width,
+                        height,
+                        bitrate: pixelCount > 2000000 ? 6_000_000 : 4_000_000,
+                        framerate: 30
+                    };
+                    
+                    try {
+                        await videoEncoder.configure(videoConfig);
+                    } catch (configErr) {
+                        console.warn("Preferred codec failed, trying fallback (Baseline 5.1)...", configErr);
+                        try {
+                            await videoEncoder.configure({
+                                ...videoConfig,
+                                codec: 'avc1.420033' // Baseline Profile Level 5.1
+                            });
+                        } catch (fallbackErr) {
+                             console.warn("Baseline 5.1 failed, trying High 5.1...", fallbackErr);
+                             await videoEncoder.configure({
+                                ...videoConfig,
+                                codec: 'avc1.640033' // High Profile Level 5.1
+                            });
+                        }
+                    }
+
+                    const audioEncoder = new AudioEncoder({
+                        output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
+                        error: e => {
+                            console.error("AudioEncoder Error:", e);
+                            encoderError = e;
+                        }
+                    });
+
+                    await audioEncoder.configure({
+                        codec: 'mp4a.40.2',
+                        numberOfChannels: audioBuffer.numberOfChannels,
+                        sampleRate: audioBuffer.sampleRate,
+                        bitrate: 128_000
+                    });
+
+                    // 5. Process Audio (Trimming + Encoding)
+                    const startSample = Math.floor(trimStart.value * audioBuffer.sampleRate);
+                    const endSample = Math.floor(trimEnd.value * audioBuffer.sampleRate);
+                    const totalSamples = endSample - startSample;
+                    
+                    // Encode audio in chunks of 1 second
+                    const audioChunkSize = audioBuffer.sampleRate; 
+                    for (let i = 0; i < totalSamples; i += audioChunkSize) {
+                        if (encoderError) throw encoderError;
+                        
+                        const chunkLen = Math.min(audioChunkSize, totalSamples - i);
+                        const planarData = new Float32Array(chunkLen * audioBuffer.numberOfChannels);
+                        
+                        for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+                            const channelData = audioBuffer.getChannelData(ch);
+                            const sliceStart = startSample + i;
+                            if (sliceStart < channelData.length) {
+                                const end = Math.min(sliceStart + chunkLen, channelData.length);
+                                planarData.set(channelData.slice(sliceStart, end), ch * chunkLen);
+                            }
+                        }
+
+                        const timestamp = (i / audioBuffer.sampleRate) * 1_000_000;
+                        const audioData = new AudioData({
+                            format: 'f32-planar',
+                            sampleRate: audioBuffer.sampleRate,
+                            numberOfFrames: chunkLen,
+                            numberOfChannels: audioBuffer.numberOfChannels,
+                            timestamp: timestamp,
+                            data: planarData
+                        });
+                        
+                        audioEncoder.encode(audioData);
+                        audioData.close();
+                    }
+
+                    // 6. Process Video (Trimming + Encoding)
+                    const fps = 30;
+                    const frameDuration = 1 / fps;
+                    let currentTimePos = trimStart.value;
+                    const startTime = trimStart.value;
+                    
+                    // Initial seek
+                    video.currentTime = currentTimePos;
+                    await new Promise(resolve => {
+                        const onSeeked = () => { video.removeEventListener('seeked', onSeeked); resolve(); };
+                        video.addEventListener('seeked', onSeeked, { once: true });
+                    });
+
+                    while (currentTimePos < trimEnd.value) {
+                         if (!isExporting.value || encoderError) break;
+                         if (videoEncoder.state !== 'configured') throw new Error("VideoEncoder closed or failed");
+
+                        // Update Progress
+                        exportProgress.value = Math.round(((currentTimePos - startTime) / (trimEnd.value - startTime)) * 100);
+                        await nextTick(); 
+
+                        // Draw frame to canvas
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(0, 0, width, height);
+                        
+                        // Apply transforms (crop/scale/position)
+                        const transform = getTransformAtTime(currentTimePos);
+                        ctx.save();
+                        ctx.translate(width / 2, height / 2);
+                        ctx.scale(transform.scale, transform.scale);
+                        ctx.translate((transform.x / 100) * width, (transform.y / 100) * height);
+                        ctx.translate(-width / 2, -height / 2);
+                        ctx.drawImage(video, 0, 0, width, height);
+                        ctx.restore();
+
+                        // Encode frame
+                        const timestamp = (currentTimePos - startTime) * 1_000_000; 
+                        const frame = new VideoFrame(canvas, { timestamp });
+                        
+                        try {
+                            const keyFrame = (Math.round((currentTimePos - startTime) * fps) % 30) === 0;
+                            videoEncoder.encode(frame, { keyFrame });
+                        } finally {
+                            frame.close();
+                        }
+
+                        // Advance time
+                        currentTimePos += frameDuration;
+                        video.currentTime = currentTimePos;
+                        
+                        // Robust seek wait with timeout
+                        await new Promise((resolve) => {
+                             let resolved = false;
+                             const onSeeked = () => {
+                                 if (resolved) return;
+                                 resolved = true;
+                                 resolve();
+                             };
+                             video.addEventListener('seeked', onSeeked, { once: true });
+                             
+                             // Fallback if seek event doesn't fire (browser quirk)
+                             setTimeout(() => { 
+                                 if (!resolved) { 
+                                     resolved = true; 
+                                     video.removeEventListener('seeked', onSeeked);
+                                     resolve(); 
+                                 } 
+                             }, 500);
+                        });
+                    }
+
+                    if (encoderError) throw encoderError;
+                    
+                    // Finalize
+                    if (isExporting.value) {
+                        if (videoEncoder.state === 'configured') await videoEncoder.flush();
+                        if (audioEncoder.state === 'configured') await audioEncoder.flush();
+                        muxer.finalize();
+    
+                        const { buffer } = muxer.target;
+                        const blob = new Blob([buffer], { type: 'video/mp4' });
+                        const url = URL.createObjectURL(blob);
+                        
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `video_${Date.now()}.mp4`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }
+                    
+                } catch (e) {
+                    console.error("Export failed:", e);
+                    alert("导出失败: " + (e.message || e));
+                } finally {
+                    isExporting.value = false;
+                    exportProgress.value = 0;
+                    // Cleanup
+                    if (video) {
+                        video.removeAttribute('src');
+                        video.load();
+                    }
+                }
+            };
+
+            return {
+                isDark, toggleTheme,
+                currentStep, config,
+                startRecording, stopRecording, reset,
+                formattedDuration, recordedUrl,
+                previewVideo, onVideoLoaded, onTimeUpdate, togglePlay, isPlaying,
+                currentTime, duration,
+                trimStart, trimEnd,
+                timelineContainer, startDrag, startScrubbing,
+                keyframes, addKeyframe, removeKeyframe, sortedKeyframes, currentKeyframe, isCurrentKeyframe, seekTo,
+                formatTime,
+                exportVideo, isExporting, exportProgress
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
