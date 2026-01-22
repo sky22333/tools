@@ -1058,6 +1058,9 @@
                                 if (writableStream) {
                                     await writableStream.close();
                                 }
+
+                                videoEncoder.close();
+                                audioEncoder.close();
                                 
                                 if (muxer.target instanceof Mp4Muxer.ArrayBufferTarget) {
                                     self.postMessage({ type: 'done', buffer: muxer.target.buffer });
@@ -1158,10 +1161,12 @@
                                 a.click();
                             }
                             setProgress(100);
+                            worker.terminate();
                         }
                         if (e.data.type === 'error') {
                             console.error("Worker Error:", e.data.message);
                             alert("导出出错: " + e.data.message);
+                            worker.terminate();
                         }
                     };
 
