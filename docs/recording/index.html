@@ -87,7 +87,7 @@
         // Fix Mp4Muxer reference
         const Mp4Muxer = window.Mp4Muxer;
 
-        // --- UI Components ---
+        // --- Components ---
 
         const Icon = ({ icon, size = 20, className = "" }) => {
             const ref = useRef(null);
@@ -698,6 +698,26 @@
             const [recordings, setRecordings] = useState([]);
             const [activeRecording, setActiveRecording] = useState(null);
 
+            // Load recordings from IndexedDB
+            useEffect(() => {
+                const loadRecordings = async () => {
+                    try {
+                        const saved = await dbHelper.getAll();
+                        // Regenerate URLs for blobs
+                        const recovered = saved.map(rec => ({
+                            ...rec,
+                            url: URL.createObjectURL(rec.blob)
+                        }));
+                        // Sort by new to old
+                        recovered.sort((a, b) => b.id - a.id);
+                        setRecordings(recovered);
+                    } catch (err) {
+                        console.error("Failed to load recordings from DB:", err);
+                    }
+                };
+                loadRecordings();
+            }, []);
+
             // Config State
             const [config, setConfig] = useState(() => {
                 if (typeof window !== 'undefined') {
@@ -770,20 +790,32 @@
 
                     const chunks = [];
                     recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-                    recorder.onstop = () => {
+                    recorder.onstop = async () => {
                         const blob = new Blob(chunks, { type: 'video/webm' });
                         const url = URL.createObjectURL(blob);
                         const newRec = {
                             id: Date.now(),
-                            title: `我的录屏 ${recordings.length + 1}`,
+                            title: `我的录屏 ${Date.now()}`, // Use timestamp to avoid length dependency
                             slug: `/recordings/untitled-${Date.now().toString().slice(-4)}`,
                             date: new Date().toLocaleDateString(),
                             duration: recordingDuration,
                             status: 'draft',
-                            url: url,
-                            blob: blob,
+                            url: url, // Ephemeral URL
+                            blob: blob, // Persistent Blob
                             notes: ''
                         };
+
+                        try {
+                            // Persist to IndexedDB
+                            // We clone the object to avoid storing the ephemeral URL if we wanted, 
+                            // but for simplicity we store it and ignore it on load.
+                            // However, we MUST store the blob.
+                            await dbHelper.add(newRec);
+                        } catch (err) {
+                            console.error("Failed to save recording to DB:", err);
+                            alert("保存录屏失败，请检查磁盘空间");
+                        }
+
                         setRecordings(prev => [newRec, ...prev]);
                         setActiveRecording(newRec);
                         setIsRecording(false);
@@ -836,12 +868,33 @@
                     const audioBuffer = await audioCtx.decodeAudioData(ab);
                     await audioCtx.close();
 
-                    // Resolution Logic
-                    let targetWidth, targetHeight;
-                    if (config.resolution === '4k') { targetWidth = 3840; targetHeight = 2160; }
-                    else if (config.resolution === '1080p') { targetWidth = 1920; targetHeight = 1080; }
-                    else if (config.resolution === '720p') { targetWidth = 1280; targetHeight = 720; }
-                    else { targetWidth = video.videoWidth; targetHeight = video.videoHeight; }
+                    // Resolution Logic (Intelligent Adaptation)
+                    // Auto-adapt to host resolution aspect ratio to avoid stretching
+                    const sourceWidth = video.videoWidth;
+                    const sourceHeight = video.videoHeight;
+                    const sourceAspectRatio = sourceWidth / sourceHeight;
+
+                    let maxW, maxH;
+                    if (config.resolution === '4k') { maxW = 3840; maxH = 2160; }
+                    else if (config.resolution === '1080p') { maxW = 1920; maxH = 1080; }
+                    else if (config.resolution === '720p') { maxW = 1280; maxH = 720; }
+                    else { maxW = sourceWidth; maxH = sourceHeight; }
+
+                    let targetWidth = maxW;
+                    let targetHeight = maxH;
+
+                    // Fit source into bounding box while maintaining aspect ratio
+                    if (sourceWidth > 0 && sourceHeight > 0) {
+                        if (sourceWidth / maxW > sourceHeight / maxH) {
+                             // Width is the limiting factor
+                             targetWidth = maxW;
+                             targetHeight = Math.round(maxW / sourceAspectRatio);
+                        } else {
+                             // Height is the limiting factor
+                             targetHeight = maxH;
+                             targetWidth = Math.round(maxH * sourceAspectRatio);
+                        }
+                    }
 
                     // Ensure even dimensions for codecs
                     targetWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
