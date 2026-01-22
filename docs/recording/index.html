@@ -19,6 +19,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -53,17 +54,28 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
         /* Range Input */
         input[type=range] { -webkit-appearance: none; background: transparent; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #0f172a; margin-top: -6px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.1s; cursor: pointer; }
+        .dark input[type=range]::-webkit-slider-thumb { background: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
         input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; }
+        .dark input[type=range]::-webkit-slider-runnable-track { background: #334155; }
 
         /* ByteMD Customization */
         .bytemd { height: 100% !important; border: none !important; }
         .bytemd-toolbar { border-bottom: 1px solid #f1f5f9 !important; background-color: #f8fafc !important; padding: 0 12px !important; }
         .bytemd-body { background-color: #ffffff; }
+        
+        /* ByteMD Dark Mode Override */
+        .dark .bytemd-toolbar { border-bottom: 1px solid #334155 !important; background-color: #1e293b !important; color: #e2e8f0 !important; }
+        .dark .bytemd-toolbar-icon { color: #e2e8f0 !important; }
+        .dark .bytemd-toolbar-icon:hover { background-color: #334155 !important; }
+        .dark .bytemd-body { background-color: #0f172a !important; color: #e2e8f0 !important; }
+        .dark .markdown-body { color: #e2e8f0 !important; }
     </style>
 </head>
 <body class="bg-gray-50 text-slate-900 overflow-hidden">
@@ -71,7 +83,7 @@
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo, useCallback } = React;
-        const { Video, Mic, Monitor, Settings, X, Download, Play, Pause, Plus, Trash2, ChevronLeft, Search, Edit2, Eye, FileText, MoreHorizontal } = (typeof lucide !== 'undefined' && lucide.icons) ? lucide.icons : lucide;
+        const { Video, Mic, Monitor, Settings, X, Download, Play, Pause, Plus, Trash2, ChevronLeft, Search, Edit2, Eye, FileText, MoreHorizontal, Moon, Sun, Github } = (typeof lucide !== 'undefined' && lucide.icons) ? lucide.icons : lucide;
         // Fix Mp4Muxer reference
         const Mp4Muxer = window.Mp4Muxer;
 
@@ -122,10 +134,10 @@
         const Button = ({ children, onClick, variant = 'primary', className = '', icon, disabled = false }) => {
             const baseStyle = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-1";
             const variants = {
-                primary: "bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/20 focus:ring-slate-900",
-                secondary: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm focus:ring-slate-200",
-                ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100"
+                primary: "bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/20 focus:ring-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 dark:shadow-slate-900/40",
+                secondary: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm focus:ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700",
+                ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white",
+                danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30"
             };
             
             return (
@@ -137,16 +149,16 @@
         };
 
         const Card = ({ title, children, actions, className = '', footer, noPadding = false }) => (
-            <div className={`bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col overflow-hidden group ${className}`}>
+            <div className={`bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col overflow-hidden group ${className} dark:bg-slate-800 dark:border-slate-700`}>
                 {(title || actions) && (
-                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white/50 backdrop-blur-sm">
-                        {title && <h3 className="font-semibold text-slate-800 text-base">{title}</h3>}
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white/50 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-800/50">
+                        {title && <h3 className="font-semibold text-slate-800 text-base dark:text-white">{title}</h3>}
                         {actions && <div className="flex gap-2">{actions}</div>}
                     </div>
                 )}
                 <div className={`${noPadding ? '' : 'p-6'} flex-grow relative`}>{children}</div>
                 {footer && (
-                    <div className="px-6 py-3 border-t border-slate-100 bg-gray-50/30 flex justify-between items-center gap-3">
+                    <div className="px-6 py-3 border-t border-slate-100 bg-gray-50/30 flex justify-between items-center gap-3 dark:border-slate-700 dark:bg-slate-900/30">
                         {footer}
                     </div>
                 )}
@@ -158,10 +170,10 @@
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative z-10 animate-slide-up border border-white/20">
-                        <div className="flex justify-between items-center p-6 border-b border-slate-100">
-                            <h3 className="text-xl font-bold text-slate-900">{title}</h3>
-                            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 p-2 rounded-full hover:bg-slate-100">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative z-10 animate-slide-up border border-white/20 dark:bg-slate-800 dark:border-slate-700">
+                        <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-700">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">{title}</h3>
+                            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 p-2 rounded-full hover:bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-300">
                                 <Icon icon={X} size={20} />
                             </button>
                         </div>
@@ -173,8 +185,8 @@
 
         const Toggle = ({ label, checked, onChange }) => (
             <div className="flex items-center justify-between cursor-pointer group" onClick={() => onChange(!checked)}>
-                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">{label}</span>
-                <div className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${checked ? 'bg-slate-900' : 'bg-slate-200'}`}>
+                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors dark:text-slate-300 dark:group-hover:text-white">{label}</span>
+                <div className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${checked ? 'bg-slate-900 dark:bg-blue-600' : 'bg-slate-200 dark:bg-slate-700'}`}>
                     <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${checked ? 'translate-x-5' : ''}`}></div>
                 </div>
             </div>
@@ -182,12 +194,12 @@
 
         const Select = ({ label, value, onChange, options }) => (
             <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</label>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400">{label}</label>
                 <div className="relative">
                     <select 
                         value={value} 
                         onChange={(e) => onChange(e.target.value)}
-                        className="w-full appearance-none bg-white border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-slate-900 block p-2.5 transition-shadow hover:border-slate-300"
+                        className="w-full appearance-none bg-white border border-slate-200 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-slate-900 block p-2.5 transition-shadow hover:border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:focus:ring-slate-500 dark:focus:border-slate-500"
                     >
                         {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                     </select>
@@ -252,12 +264,12 @@
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="relative max-w-lg w-full group">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Icon icon={Search} className="text-slate-400 group-focus-within:text-slate-900 transition-colors" />
+                                <Icon icon={Search} className="text-slate-400 group-focus-within:text-slate-900 transition-colors dark:text-slate-500 dark:group-focus-within:text-slate-300" />
                             </div>
                             <input 
                                 type="text" 
                                 placeholder="搜索录屏..." 
-                                className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent sm:text-sm transition-all shadow-sm group-hover:shadow-md"
+                                className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent sm:text-sm transition-all shadow-sm group-hover:shadow-md dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder-slate-500 dark:focus:ring-slate-500"
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                             />
@@ -269,12 +281,12 @@
 
                     {/* Grid */}
                     {filteredRecordings.length === 0 ? (
-                        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
-                            <div className="mx-auto w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                                <Icon icon={Video} size={32} className="text-slate-300" />
+                        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300 dark:bg-slate-800 dark:border-slate-700">
+                            <div className="mx-auto w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 dark:bg-slate-700">
+                                <Icon icon={Video} size={32} className="text-slate-300 dark:text-slate-500" />
                             </div>
-                            <h3 className="text-lg font-medium text-slate-900">暂无录屏内容</h3>
-                            <p className="text-slate-500 mt-1">点击右上角按钮开始您的第一次录制</p>
+                            <h3 className="text-lg font-medium text-slate-900 dark:text-white">暂无录屏内容</h3>
+                            <p className="text-slate-500 mt-1 dark:text-slate-400">点击右上角按钮开始您的第一次录制</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -285,14 +297,14 @@
                                     footer={
                                         <>
                                             <div className="flex gap-1">
-                                                <button onClick={() => onEdit(rec)} className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" title="编辑">
+                                                <button onClick={() => onEdit(rec)} className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700" title="编辑">
                                                     <Icon icon={Edit2} size={18} />
                                                 </button>
-                                                <button onClick={() => onDelete(rec.id)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="删除">
+                                                <button onClick={() => onDelete(rec.id)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-900/20" title="删除">
                                                     <Icon icon={Trash2} size={18} />
                                                 </button>
                                             </div>
-                                            <button onClick={() => onPreview(rec)} className="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-md hover:bg-slate-100 transition-colors">
+                                            <button onClick={() => onPreview(rec)} className="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-md hover:bg-slate-100 transition-colors dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700">
                                                 预览
                                             </button>
                                         </>
@@ -300,21 +312,21 @@
                                 >
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                                            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                                                 <Icon icon={FileText} size={14} />
                                                 <span className="font-mono truncate max-w-[120px]">{rec.slug}</span>
                                             </div>
                                             {rec.status === 'draft' && (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600">
                                                     草稿
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="aspect-video bg-slate-100 rounded-lg overflow-hidden relative group cursor-pointer border border-slate-200" onClick={() => onPreview(rec)}>
+                                        <div className="aspect-video bg-slate-100 rounded-lg overflow-hidden relative group cursor-pointer border border-slate-200 dark:bg-slate-900 dark:border-slate-700" onClick={() => onPreview(rec)}>
                                             <video src={rec.url} className="w-full h-full object-cover" />
                                             <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-colors flex items-center justify-center">
-                                                <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-300">
-                                                    <Icon icon={Play} size={20} className="text-slate-900 ml-1" />
+                                                <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-300 dark:bg-slate-800/90">
+                                                    <Icon icon={Play} size={20} className="text-slate-900 ml-1 dark:text-white" />
                                                 </div>
                                             </div>
                                             <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-md font-mono">
@@ -335,7 +347,7 @@
             );
         };
 
-        const EditorView = ({ recording, onBack, onSave, onExport }) => {
+        const EditorView = ({ recording, onBack, onSave, onExport, theme, toggleTheme }) => {
             const [activeTab, setActiveTab] = useState('editor'); // editor, notes
             const [isPlaying, setIsPlaying] = useState(false);
             const [currentTime, setCurrentTime] = useState(0);
@@ -469,19 +481,21 @@
             return (
                 <div className="h-[calc(100vh-6rem)] flex flex-col gap-4 animate-fade-in">
                     {/* Top Bar */}
-                    <div className="flex items-center justify-between bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm shrink-0">
+                    <div className="flex items-center justify-between bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm shrink-0 dark:bg-slate-800 dark:border-slate-700">
                         <div className="flex items-center gap-4">
                             <Button variant="ghost" onClick={onBack} icon={ChevronLeft}>返回</Button>
-                            <div className="h-6 w-px bg-slate-200"></div>
+                            <div className="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
                             <div className="flex flex-col">
-                                <h2 className="font-bold text-slate-800">{recording.title}</h2>
-                                <span className="text-xs text-slate-500 font-mono">{recording.slug}</span>
+                                <h2 className="font-bold text-slate-800 dark:text-white">{recording.title}</h2>
+                                <span className="text-xs text-slate-500 font-mono dark:text-slate-400">{recording.slug}</span>
                             </div>
                         </div>
                         <div className="flex gap-2 items-center">
-                             <div className="flex bg-slate-100 rounded-lg p-1 mr-4">
-                                <button onClick={() => setActiveTab('editor')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'editor' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>视频编辑</button>
-                                <button onClick={() => setActiveTab('notes')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'notes' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>备注文档</button>
+                            <HeaderControls theme={theme} toggleTheme={toggleTheme} />
+                            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2"></div>
+                             <div className="flex bg-slate-100 rounded-lg p-1 mr-4 dark:bg-slate-900">
+                                <button onClick={() => setActiveTab('editor')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'editor' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>视频编辑</button>
+                                <button onClick={() => setActiveTab('notes')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'notes' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>备注文档</button>
                             </div>
                             <Button 
                                 onClick={() => {
@@ -519,34 +533,34 @@
                                 </div>
                                 
                                 {/* Timeline */}
-                                <div className="bg-white p-4 rounded-xl border border-slate-200 h-28 relative select-none shrink-0"
+                                <div className="bg-white p-4 rounded-xl border border-slate-200 h-28 relative select-none shrink-0 dark:bg-slate-800 dark:border-slate-700"
                                      ref={timelineRef}
                                      onMouseDown={handleTimelineMouseDown}
                                      >
-                                    <div className="absolute inset-x-6 top-1/2 h-2 bg-slate-100 rounded-full overflow-visible">
+                                    <div className="absolute inset-x-6 top-1/2 h-2 bg-slate-100 rounded-full overflow-visible dark:bg-slate-700">
                                         {/* Trim Masks */}
-                                        <div className="absolute inset-y-0 left-0 bg-slate-300/50 z-10 rounded-l-full pointer-events-none" style={{ width: `${(trim.start/duration)*100}%` }}></div>
-                                        <div className="absolute inset-y-0 right-0 bg-slate-300/50 z-10 rounded-r-full pointer-events-none" style={{ left: `${(trim.end/duration)*100}%` }}></div>
+                                        <div className="absolute inset-y-0 left-0 bg-slate-300/50 z-10 rounded-l-full pointer-events-none dark:bg-slate-900/50" style={{ width: `${(trim.start/duration)*100}%` }}></div>
+                                        <div className="absolute inset-y-0 right-0 bg-slate-300/50 z-10 rounded-r-full pointer-events-none dark:bg-slate-900/50" style={{ left: `${(trim.end/duration)*100}%` }}></div>
 
                                         {/* Trim Handles */}
                                         <div 
-                                             className="absolute top-1/2 h-8 w-4 bg-white shadow-sm border border-slate-300 rounded-l-md cursor-ew-resize z-30 flex items-center justify-center group hover:border-blue-500 transition-colors"
+                                             className="absolute top-1/2 h-8 w-4 bg-white border border-slate-300 rounded-l-md cursor-ew-resize z-30 flex items-center justify-center group hover:border-blue-500 transition-colors dark:bg-slate-700 dark:border-slate-600"
                                              style={{ left: `${(trim.start/duration)*100}%`, transform: 'translate(-100%, -50%)' }}
                                              onMouseDown={(e) => handleTimelineMouseDown(e, 'start')}
                                              title={`开始: ${formatTime(trim.start)}`}
                                         >
-                                            <div className="w-1 h-3 bg-slate-300 rounded-full group-hover:bg-blue-500"></div>
+                                            <div className="w-1 h-3 bg-slate-300 rounded-full group-hover:bg-blue-500 dark:bg-slate-500"></div>
                                         </div>
                                         <div 
-                                             className="absolute top-1/2 h-8 w-4 bg-white shadow-sm border border-slate-300 rounded-r-md cursor-ew-resize z-30 flex items-center justify-center group hover:border-blue-500 transition-colors"
+                                             className="absolute top-1/2 h-8 w-4 bg-white border border-slate-300 rounded-r-md cursor-ew-resize z-30 flex items-center justify-center group hover:border-blue-500 transition-colors dark:bg-slate-700 dark:border-slate-600"
                                              style={{ left: `${(trim.end/duration)*100}%`, transform: 'translate(0, -50%)' }}
                                              onMouseDown={(e) => handleTimelineMouseDown(e, 'end')}
                                              title={`结束: ${formatTime(trim.end)}`}
                                         >
-                                            <div className="w-1 h-3 bg-slate-300 rounded-full group-hover:bg-blue-500"></div>
+                                            <div className="w-1 h-3 bg-slate-300 rounded-full group-hover:bg-blue-500 dark:bg-slate-500"></div>
                                         </div>
 
-                                        <div className="h-full bg-slate-900/10 rounded-full" style={{ width: `${(currentTime/duration)*100}%` }}></div>
+                                        <div className="h-full bg-slate-900/10 rounded-full dark:bg-white/20" style={{ width: `${(currentTime/duration)*100}%` }}></div>
                                         
                                         {/* Playhead */}
                                         <div className="absolute top-1/2 w-4 h-4 bg-white border-2 border-red-500 rounded-full -translate-y-1/2 cursor-grab active:cursor-grabbing z-20" 
@@ -557,7 +571,7 @@
                                         {/* Keyframe Dots */}
                                         {keyframes.map(kf => (
                                             <div key={kf.id} 
-                                                 className={`absolute top-1/2 w-3 h-3 rounded-full -translate-y-1/2 -ml-1.5 cursor-pointer z-10 transition-transform hover:scale-150 ${selectedKeyframeId === kf.id ? 'bg-blue-600 ring-2 ring-blue-200' : 'bg-blue-400'}`}
+                                                 className={`absolute top-1/2 w-3 h-3 rounded-full -translate-y-1/2 -ml-1.5 cursor-pointer z-10 transition-transform hover:scale-150 ${selectedKeyframeId === kf.id ? 'bg-blue-600 ring-2 ring-blue-200 dark:ring-blue-900' : 'bg-blue-400'}`}
                                                  style={{ left: `${(kf.time/duration)*100}%` }}
                                                  onMouseDown={(e) => { 
                                                      e.stopPropagation(); 
@@ -581,15 +595,15 @@
                                     <Button onClick={addKeyframe} variant="secondary" className="w-full" icon={Plus}>在此处添加关键帧</Button>
                                     
                                     {selectedKeyframe ? (
-                                        <div className="space-y-4 animate-fade-in bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                        <div className="space-y-4 animate-fade-in bg-slate-50 p-4 rounded-lg border border-slate-100 dark:bg-slate-900 dark:border-slate-700">
                                             <div className="flex justify-between items-center">
-                                                <span className="text-sm font-medium text-blue-600">时间点: {formatTime(selectedKeyframe.time)}</span>
-                                                <button onClick={() => deleteKeyframe(selectedKeyframe.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Icon icon={Trash2} size={16}/></button>
+                                                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">时间点: {formatTime(selectedKeyframe.time)}</span>
+                                                <button onClick={() => deleteKeyframe(selectedKeyframe.id)} className="text-red-500 hover:bg-red-50 p-1 rounded dark:hover:bg-red-900/20"><Icon icon={Trash2} size={16}/></button>
                                             </div>
                                             <div className="space-y-3">
-                                                <div><label className="text-xs text-slate-500">缩放 (x{selectedKeyframe.scale.toFixed(1)})</label><input type="range" min="1" max="3" step="0.1" value={selectedKeyframe.scale} onChange={e => updateKeyframe(selectedKeyframe.id, {scale: parseFloat(e.target.value)})} className="w-full"/></div>
-                                                <div><label className="text-xs text-slate-500">X 偏移</label><input type="range" min="-50" max="50" value={selectedKeyframe.x} onChange={e => updateKeyframe(selectedKeyframe.id, {x: parseFloat(e.target.value)})} className="w-full"/></div>
-                                                <div><label className="text-xs text-slate-500">Y 偏移</label><input type="range" min="-50" max="50" value={selectedKeyframe.y} onChange={e => updateKeyframe(selectedKeyframe.id, {y: parseFloat(e.target.value)})} className="w-full"/></div>
+                                                <div><label className="text-xs text-slate-500 dark:text-slate-400">缩放 (x{selectedKeyframe.scale.toFixed(1)})</label><input type="range" min="1" max="3" step="0.1" value={selectedKeyframe.scale} onChange={e => updateKeyframe(selectedKeyframe.id, {scale: parseFloat(e.target.value)})} className="w-full"/></div>
+                                                <div><label className="text-xs text-slate-500 dark:text-slate-400">X 偏移</label><input type="range" min="-50" max="50" value={selectedKeyframe.x} onChange={e => updateKeyframe(selectedKeyframe.id, {x: parseFloat(e.target.value)})} className="w-full"/></div>
+                                                <div><label className="text-xs text-slate-500 dark:text-slate-400">Y 偏移</label><input type="range" min="-50" max="50" value={selectedKeyframe.y} onChange={e => updateKeyframe(selectedKeyframe.id, {y: parseFloat(e.target.value)})} className="w-full"/></div>
                                             </div>
                                         </div>
                                     ) : (
@@ -599,15 +613,15 @@
                                         </div>
                                     )}
 
-                                    <div className="border-t border-slate-100 pt-4">
+                                    <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
                                         <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">关键帧列表</h4>
                                         <div className="space-y-1 max-h-[300px] overflow-y-auto pr-2">
                                             {keyframes.map(kf => (
                                                 <div key={kf.id} onClick={() => { setSelectedKeyframeId(kf.id); if(videoRef.current) videoRef.current.currentTime = kf.time; }}
-                                                     className={`flex items-center p-2 rounded-lg text-xs cursor-pointer transition-colors ${selectedKeyframeId === kf.id ? 'bg-slate-100 text-slate-900 font-bold border border-slate-200' : 'text-slate-500 hover:bg-slate-50 border border-transparent'}`}>
+                                                     className={`flex items-center p-2 rounded-lg text-xs cursor-pointer transition-colors ${selectedKeyframeId === kf.id ? 'bg-slate-100 text-slate-900 font-bold border border-slate-200 dark:bg-slate-700 dark:text-white dark:border-slate-600' : 'text-slate-500 hover:bg-slate-50 border border-transparent dark:text-slate-400 dark:hover:bg-slate-800'}`}>
                                                     <span className="font-mono">{formatTime(kf.time)}</span>
                                                     <div className="ml-auto flex items-center gap-2">
-                                                        <span className="bg-slate-200 px-1.5 rounded text-[10px]">x{kf.scale}</span>
+                                                        <span className="bg-slate-200 px-1.5 rounded text-[10px] dark:bg-slate-700 dark:text-slate-300">x{kf.scale}</span>
                                                     </div>
                                                 </div>
                                             ))}
@@ -618,7 +632,7 @@
                             </Card>
                         </div>
                     ) : (
-                        <div className="flex-grow bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                        <div className="flex-grow bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col dark:bg-slate-800 dark:border-slate-700">
                              <ByteMDEditor value={markdown} onChange={setMarkdown} />
                         </div>
                     )}
@@ -626,20 +640,60 @@
             );
         };
 
+        const HeaderControls = ({ theme, toggleTheme }) => (
+            <div className="flex items-center gap-2">
+                <a href="https://github.com/sky22333/tools" target="_blank" className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors" title="GitHub">
+                    <Icon icon={Github} size={20} />
+                </a>
+                <button onClick={toggleTheme} className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors" title={theme === 'dark' ? '切换亮色主题' : '切换暗色主题'}>
+                    <Icon icon={theme === 'dark' ? Sun : Moon} size={20} />
+                </button>
+            </div>
+        );
+
         const App = () => {
             const [view, setView] = useState('dashboard');
             const [isSetupOpen, setIsSetupOpen] = useState(false);
             const [isRecording, setIsRecording] = useState(false);
             const [isStarting, setIsStarting] = useState(false);
+            const [theme, setTheme] = useState(() => {
+                if (typeof window !== 'undefined') {
+                    const saved = localStorage.getItem('theme');
+                    if (saved) return saved;
+                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+                }
+                return 'light';
+            });
+
+            useEffect(() => {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+                localStorage.setItem('theme', theme);
+            }, [theme]);
+
+            const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
             
             // Mock Data
             const [recordings, setRecordings] = useState([]);
             const [activeRecording, setActiveRecording] = useState(null);
 
             // Config State
-            const [config, setConfig] = useState({
-                micEnabled: true, systemAudioEnabled: true, micVolume: 1.0, resolution: '1080p', frameRate: '30'
+            const [config, setConfig] = useState(() => {
+                if (typeof window !== 'undefined') {
+                    const saved = localStorage.getItem('recorder_config');
+                    if (saved) {
+                        try { return JSON.parse(saved); } catch (e) { console.error("Config parse error", e); }
+                    }
+                }
+                return { micEnabled: true, systemAudioEnabled: true, micVolume: 1.0, resolution: '1080p', frameRate: '30' };
             });
+
+            useEffect(() => {
+                localStorage.setItem('recorder_config', JSON.stringify(config));
+            }, [config]);
 
             // Recording Logic
             const mediaRecorderRef = useRef(null);
@@ -703,7 +757,7 @@
                         const url = URL.createObjectURL(blob);
                         const newRec = {
                             id: Date.now(),
-                            title: `未命名录屏 ${recordings.length + 1}`,
+                            title: `我的录屏 ${recordings.length + 1}`,
                             slug: `/recordings/untitled-${Date.now().toString().slice(-4)}`,
                             date: new Date().toLocaleDateString(),
                             duration: recordingDuration,
@@ -921,12 +975,15 @@
             };
 
             return (
-                <div className="min-h-screen font-sans text-slate-900 bg-gray-50 selection:bg-slate-900 selection:text-white">
+                <div className="min-h-screen font-sans text-slate-900 bg-gray-50 selection:bg-slate-900 selection:text-white dark:bg-slate-900 dark:text-white">
                     {view === 'dashboard' && (
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                            <div className="mb-8">
-                                <h1 className="text-2xl font-bold tracking-tight text-slate-900">我的录屏</h1>
-                                <p className="text-slate-500 mt-1">管理和编辑您的所有录屏文件</p>
+                            <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">在线录屏工具</h1>
+                                    <p className="text-slate-500 mt-1 dark:text-slate-400">管理和编辑您的所有录屏文件</p>
+                                </div>
+                                <HeaderControls theme={theme} toggleTheme={toggleTheme} />
                             </div>
                             <DashboardView 
                                 recordings={recordings} 
@@ -946,6 +1003,8 @@
                                 onBack={() => { setView('dashboard'); setActiveRecording(null); }}
                                 onSave={() => { setView('dashboard'); }}
                                 onExport={handleExport}
+                                theme={theme}
+                                toggleTheme={toggleTheme}
                             />
                         </div>
                     )}
