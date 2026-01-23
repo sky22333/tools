@@ -2,6 +2,7 @@
 网页在线录屏, ./recording
 安卓开发工具, ./android
 代码编辑器, ./code
+TVBox配置生成器, ./tv
 ip配置器, ./ip
 md在线编辑器, ./md
 哪吒配置生成器, ./nezha
