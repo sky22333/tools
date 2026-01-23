@@ -296,7 +296,7 @@
                                 <div class="grid gap-2">
                                     <label class="text-sm font-medium leading-none">平台标识 (Flags)</label>
                                     <input :value="parse.ext.flag.join(', ')" @input="updateFlags(index, $event.target.value)" type="text" placeholder="用逗号分隔，如: qq, youku, qiyi" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                                    <p class="text-xs text-muted-foreground">默认包含: qq, 腾讯, qiyi, 爱奇艺, youku, 优酷, mgtv, 芒果, bilibili...</p>
+                                    <p class="text-xs text-muted-foreground">默认包含: youku, qq, iqiyi, qiyi, letv, sohu, tudou, pptv, mgtv, wasu</p>
                                 </div>
                             </div>
                         </transition-group>
@@ -374,9 +374,8 @@
             setup() {
                 // Default Flags
                 const defaultFlags = [
-                    "qq", "腾讯", "qiyi", "爱奇艺", "奇艺", "youku", "优酷", 
-                    "mgtv", "芒果", "letv", "乐视", "pptv", "PPTV", 
-                    "sohu", "bilibili", "哔哩哔哩", "哔哩"
+                    "youku", "qq", "iqiyi", "qiyi", "letv", 
+                    "sohu", "tudou", "pptv", "mgtv", "wasu"
                 ];
 
                 // Initial Config State
