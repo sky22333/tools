@@ -330,7 +330,7 @@
                         
                         <div class="grid grid-cols-2 gap-3">
                              <button @click="showBase64Modal = true" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                                <i data-lucide="file-code" class="w-4 h-4 mr-2"></i> Base64 导出
+                                <i data-lucide="file-code" class="w-4 h-4 mr-2"></i> Base64 编码
                             </button>
                              <button @click="resetConfig" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-destructive hover:text-destructive-foreground h-10 px-4 py-2">
                                 <i data-lucide="rotate-ccw" class="w-4 h-4 mr-2"></i> 重置配置
@@ -354,29 +354,9 @@
                 
                 <div class="space-y-4">
                     <div class="grid gap-2">
-                        <label class="text-sm font-medium">无前缀 (推荐)</label>
                         <div class="flex gap-2 items-center">
                             <input :value="base64Output" readonly class="flex-1 flex h-9 rounded-md border border-input bg-muted px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
                             <button @click="copyTextToClipboard(base64Output)" class="shrink-0 whitespace-nowrap inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-3">
-                                复制
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="grid gap-2">
-                        <label class="text-sm font-medium">**D 前缀 (旧版兼容)</label>
-                        <div class="flex gap-2 items-center">
-                            <input :value="'**D' + base64Output" readonly class="flex-1 flex h-9 rounded-md border border-input bg-muted px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
-                            <button @click="copyTextToClipboard('**D' + base64Output)" class="shrink-0 whitespace-nowrap inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-3">
-                                复制
-                            </button>
-                        </div>
-                    </div>
-                     <div class="grid gap-2">
-                        <label class="text-sm font-medium">clan:// 前缀</label>
-                        <div class="flex gap-2 items-center">
-                            <input :value="'clan://' + base64Output" readonly class="flex-1 flex h-9 rounded-md border border-input bg-muted px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
-                            <button @click="copyTextToClipboard('clan://' + base64Output)" class="shrink-0 whitespace-nowrap inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-3">
                                 复制
                             </button>
                         </div>
