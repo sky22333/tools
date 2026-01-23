@@ -220,9 +220,6 @@
                                 <h3 class="text-2xl font-semibold leading-none tracking-tight">视频源 (Sites)</h3>
                                 <p class="text-sm text-muted-foreground mt-1">添加 苹果CMS v10 或其他类型的视频源接口。</p>
                             </div>
-                            <button @click="addSite" class="shrink-0 whitespace-nowrap inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 gap-2">
-                                <i data-lucide="plus" class="w-4 h-4"></i> 新增源
-                            </button>
                         </div>
                     </div>
                     <div class="p-6 pt-0 space-y-4">
@@ -259,8 +256,11 @@
                         </transition-group>
                         
                         <div v-if="config.sites.length === 0" class="text-center py-8 text-muted-foreground border-2 border-dashed rounded-md">
-                            暂无视频源，请点击右上角“新增源”
+                            暂无视频源，请点击下方“新增源”
                         </div>
+                        <button @click="addSite" class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> 新增源
+                        </button>
                     </div>
                 </div>
 
@@ -272,9 +272,6 @@
                                 <h3 class="text-2xl font-semibold leading-none tracking-tight">解析接口 (Parses)</h3>
                                 <p class="text-sm text-muted-foreground mt-1">配置视频聚合解析接口，自动生成常见 Flag。</p>
                             </div>
-                            <button @click="addParse" class="shrink-0 whitespace-nowrap inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 gap-2">
-                                <i data-lucide="plus" class="w-4 h-4"></i> 新增解析
-                            </button>
                         </div>
                     </div>
                     <div class="p-6 pt-0 space-y-4">
@@ -300,6 +297,10 @@
                                 </div>
                             </div>
                         </transition-group>
+                        
+                        <button @click="addParse" class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> 新增解析
+                        </button>
                     </div>
                 </div>
 
