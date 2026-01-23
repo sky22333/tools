@@ -314,10 +314,26 @@
                         <p class="text-sm text-muted-foreground">实时生成的 JSON 配置代码。</p>
                     </div>
                     <div class="p-6 pt-0">
-                        <div class="relative">
-                            <pre class="flex w-full rounded-md border border-input bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 overflow-auto h-[500px] font-mono text-xs leading-5">{{ jsonOutput }}</pre>
-                            <div class="absolute top-2 right-2 flex gap-2">
-                                <button @click="copyJson" class="inline-flex items-center justify-center rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 border shadow-sm">
+                        <div class="relative group">
+                            <textarea 
+                                v-model="internalJson"
+                                @focus="onEditorFocus"
+                                @blur="onEditorBlur"
+                                @keydown.tab.prevent="handleTab"
+                                spellcheck="false"
+                                class="flex w-full rounded-md border border-input bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 overflow-auto h-[500px] font-mono text-xs leading-5 resize-none"
+                            ></textarea>
+                            
+                            <!-- Error Message -->
+                            <div v-if="jsonError" class="absolute bottom-4 left-4 right-4 bg-destructive/90 text-destructive-foreground px-4 py-2 rounded-md text-xs font-mono backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 pointer-events-none">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                    <span>{{ jsonError }}</span>
+                                </div>
+                            </div>
+
+                            <div class="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button @click="copyJson" class="inline-flex items-center justify-center rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-8 px-3 border shadow-sm">
                                     <i data-lucide="copy" class="w-3 h-3 mr-1"></i> {{ copyText }}
                                 </button>
                             </div>
@@ -394,31 +410,102 @@
                 const copyText = ref("复制 JSON");
                 const showBase64Modal = ref(false);
                 const isDark = ref(false);
+                
+                // Editor State
+                const internalJson = ref("");
+                const isFocused = ref(false);
+                const jsonError = ref(null);
 
-                // Computed JSON Output
-                const jsonOutput = computed(() => {
-                    // Ensure keys are unique if user doesn't provide them
-                    const processedSites = config.value.sites.map((site, idx) => ({
+                // Helper: Process Config to ensure keys exist
+                const getProcessedConfig = (cfg) => {
+                    const processedSites = cfg.sites.map((site, idx) => ({
                         ...site,
                         key: site.key || `site_${idx}_${Date.now()}`
                     }));
-                    
-                    const finalConfig = {
-                        ...config.value,
+                    return {
+                        ...cfg,
                         sites: processedSites
                     };
-                    return JSON.stringify(finalConfig, null, 2);
+                };
+
+                // Sync Config -> JSON
+                watch(config, (newVal) => {
+                    if (!isFocused.value) {
+                        const finalConfig = getProcessedConfig(newVal);
+                        internalJson.value = JSON.stringify(finalConfig, null, 2);
+                        jsonError.value = null; // Clear error on external update
+                    }
+                }, { deep: true, immediate: true });
+
+                // Sync JSON -> Config (Debounced or on input)
+                watch(internalJson, (newVal) => {
+                    if (!newVal) return;
+                    
+                    try {
+                        const parsed = JSON.parse(newVal);
+                        // Basic validation
+                        if (typeof parsed !== 'object' || parsed === null) {
+                            throw new Error("JSON must be an object");
+                        }
+                        
+                        // Update config silently (without triggering reverse watch loop ideally, 
+                        // but logic handles it via !isFocused check mostly, though deep watch might still trigger.
+                        // However, if parsed object is structurally same as config, vue might skip update?
+                        // Actually, since we update config, the watch(config) will trigger.
+                        // But if isFocused is true, it won't overwrite internalJson. Perfect.
+                        
+                        config.value = parsed;
+                        jsonError.value = null;
+                    } catch (e) {
+                        jsonError.value = e.message;
+                    }
                 });
+
+                // Computed for exports (referencing internalJson to reflect current editor state)
+                const jsonOutput = computed(() => internalJson.value);
                 
                 // Computed Base64 Output
                 const base64Output = computed(() => {
-                    // Use standard btoa with UTF-8 encoding fix
-                    const str = jsonOutput.value;
-                    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
-                        function toSolidBytes(match, p1) {
-                            return String.fromCharCode('0x' + p1);
-                    }));
+                    try {
+                        // Use standard btoa with UTF-8 encoding fix
+                        const str = jsonOutput.value;
+                        return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+                            function toSolidBytes(match, p1) {
+                                return String.fromCharCode('0x' + p1);
+                        }));
+                    } catch (e) {
+                        return "Error generating Base64";
+                    }
                 });
+
+                // Editor Methods
+                const onEditorFocus = () => {
+                    isFocused.value = true;
+                };
+
+                const onEditorBlur = () => {
+                    isFocused.value = false;
+                    // Re-format on blur if valid
+                    if (!jsonError.value) {
+                        const finalConfig = getProcessedConfig(config.value);
+                        internalJson.value = JSON.stringify(finalConfig, null, 2);
+                    }
+                };
+
+                const handleTab = (e) => {
+                    const textarea = e.target;
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    
+                    // Insert 2 spaces
+                    const spaces = "  ";
+                    internalJson.value = internalJson.value.substring(0, start) + spaces + internalJson.value.substring(end);
+                    
+                    // Move cursor
+                    nextTick(() => {
+                        textarea.selectionStart = textarea.selectionEnd = start + spaces.length;
+                    });
+                };
 
                 // Methods
                 const addSite = () => {
@@ -535,7 +622,12 @@
                     copyTextToClipboard,
                     downloadJson,
                     resetConfig,
-                    toggleDarkMode
+                    toggleDarkMode,
+                    internalJson,
+                    jsonError,
+                    onEditorFocus,
+                    onEditorBlur,
+                    handleTab
                 };
             }
         }).mount('#app');
