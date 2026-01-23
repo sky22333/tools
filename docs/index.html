@@ -177,19 +177,35 @@
         </div>
     </footer>
 
-    <!-- Floating Action Button -->
-    <div id="fabContainer" class="fixed bottom-8 right-8 z-50 flex flex-col items-end hidden transition-opacity duration-300">
-        <!-- Menu -->
-        <div id="categoryMenu" class="mb-4 w-48 bg-card border border-border/40 rounded-xl shadow-xl overflow-hidden transition-all duration-300 origin-bottom-right transform scale-90 opacity-0 invisible translate-y-4 backdrop-blur-sm bg-card/95 supports-[backdrop-filter]:bg-card/80">
-            <div class="max-h-[60vh] overflow-y-auto py-1 custom-scrollbar" id="categoryMenuList">
-                <!-- Items will be injected here -->
+    <!-- Floating Action Button Container -->
+    <div id="fabContainer" class="fixed bottom-8 right-8 z-50 flex flex-col items-end hidden transition-opacity duration-300 pointer-events-none">
+        
+        <!-- Category Menu (Initially hidden) -->
+        <div id="categoryMenu" class="pointer-events-auto mb-4 w-48 bg-card border border-border rounded-lg shadow-lg transform scale-90 opacity-0 invisible translate-y-4 transition-all duration-300 origin-bottom-right overflow-hidden flex flex-col max-h-[60vh]">
+            <div class="p-3 border-b border-border bg-muted/30">
+                <h3 class="font-semibold text-sm">快速导航</h3>
+            </div>
+            <div id="categoryMenuList" class="overflow-y-auto py-1 custom-scrollbar">
+                <!-- Categories will be injected here -->
             </div>
         </div>
-        
-        <!-- Button -->
-        <button id="fabBtn" class="h-12 w-12 rounded-full bg-transparent text-foreground border border-border/40 backdrop-blur-sm shadow-sm flex items-center justify-center active:scale-95 transition-all duration-300 group ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:bg-accent/10">
-            <i data-lucide="list" class="h-6 w-6 transition-transform duration-300 group-hover:rotate-180"></i>
-        </button>
+
+        <!-- Main FAB Button -->
+    <button id="fabBtn" class="pointer-events-auto group h-14 w-14 bg-background/80 backdrop-blur-md border border-border/50 text-foreground rounded-full shadow-lg hover:shadow-xl hover:bg-accent flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95">
+        <div class="relative w-6 h-6 flex items-center justify-center">
+             <!-- Menu Icon (visible by default) -->
+             <svg id="iconMenu" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute transition-all duration-300 opacity-100 rotate-0 scale-100">
+                <line x1="4" x2="20" y1="12" y2="12"></line>
+                <line x1="4" x2="20" y1="6" y2="6"></line>
+                <line x1="4" x2="20" y1="18" y2="18"></line>
+             </svg>
+             <!-- X Icon (hidden by default) -->
+             <svg id="iconClose" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute transition-all duration-300 opacity-0 -rotate-90 scale-50">
+                <path d="M18 6 6 18"></path>
+                <path d="m6 6 12 12"></path>
+             </svg>
+        </div>
+    </button>
     </div>
 
     <script>
@@ -417,7 +433,15 @@
              return card;
         }
 
-        searchInput.addEventListener('input', (e) => {
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        searchInput.addEventListener('input', debounce((e) => {
             const query = e.target.value.trim().toLowerCase();
             
             if (!query) {
@@ -435,7 +459,7 @@
             });
             
             renderSites(filteredSites);
-        });
+        }, 500));
 
         // Floating Menu Logic
         const fabContainer = document.getElementById('fabContainer');
@@ -452,14 +476,27 @@
         function toggleMenu(show) {
             isMenuOpen = show !== undefined ? show : !isMenuOpen;
             const classes = ['scale-100', 'opacity-100', 'visible', 'translate-y-0'];
+            const menuIcon = document.getElementById('iconMenu');
+            const closeIcon = document.getElementById('iconClose');
+
             if (isMenuOpen) {
                 categoryMenu.classList.remove('scale-90', 'opacity-0', 'invisible', 'translate-y-4');
                 categoryMenu.classList.add(...classes);
-                fabBtn.querySelector('svg').classList.add('rotate-90');
+                
+                menuIcon.classList.remove('opacity-100', 'rotate-0', 'scale-100');
+                menuIcon.classList.add('opacity-0', 'rotate-90', 'scale-50');
+                
+                closeIcon.classList.remove('opacity-0', '-rotate-90', 'scale-50');
+                closeIcon.classList.add('opacity-100', 'rotate-0', 'scale-100');
             } else {
                 categoryMenu.classList.add('scale-90', 'opacity-0', 'invisible', 'translate-y-4');
                 categoryMenu.classList.remove(...classes);
-                fabBtn.querySelector('svg').classList.remove('rotate-90');
+                
+                menuIcon.classList.add('opacity-100', 'rotate-0', 'scale-100');
+                menuIcon.classList.remove('opacity-0', 'rotate-90', 'scale-50');
+                
+                closeIcon.classList.add('opacity-0', '-rotate-90', 'scale-50');
+                closeIcon.classList.remove('opacity-100', 'rotate-0', 'scale-100');
             }
         }
         const closeMenu = () => toggleMenu(false);
