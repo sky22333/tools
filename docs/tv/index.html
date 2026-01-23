@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TVBox 配置生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+        }
+
+        /* Shadcn UI Color Variables */
+        :root {
+            --background: 0 0% 100%;
+            --foreground: 222.2 84% 4.9%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 84% 4.9%;
+            --popover: 0 0% 100%;
+            --popover-foreground: 222.2 84% 4.9%;
+            --primary: 222.2 47.4% 11.2%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96.1%;
+            --secondary-foreground: 222.2 47.4% 11.2%;
+            --muted: 210 40% 96.1%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --accent: 210 40% 96.1%;
+            --accent-foreground: 222.2 47.4% 11.2%;
+            --destructive: 0 84.2% 60.2%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+            --ring: 222.2 84% 4.9%;
+            --radius: 0.5rem;
+        }
+
+        .dark {
+            --background: 222.2 84% 4.9%;
+            --foreground: 210 40% 98%;
+            --card: 222.2 84% 4.9%;
+            --card-foreground: 210 40% 98%;
+            --popover: 222.2 84% 4.9%;
+            --popover-foreground: 210 40% 98%;
+            --primary: 210 40% 98%;
+            --primary-foreground: 222.2 47.4% 11.2%;
+            --secondary: 217.2 32.6% 17.5%;
+            --secondary-foreground: 210 40% 98%;
+            --muted: 217.2 32.6% 17.5%;
+            --muted-foreground: 215 20.2% 65.1%;
+            --accent: 217.2 32.6% 17.5%;
+            --accent-foreground: 210 40% 98%;
+            --destructive: 0 62.8% 30.6%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 217.2 32.6% 17.5%;
+            --input: 217.2 32.6% 17.5%;
+            --ring: 212.7 26.8% 83.9%;
+        }
+        
+        /* Utility for transitions */
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.2s ease;
+        }
+
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: hsl(var(--muted-foreground) / 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: hsl(var(--muted-foreground) / 0.5);
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                container: {
+                    center: true,
+                    padding: "2rem",
+                    screens: {
+                        "2xl": "1400px",
+                    },
+                },
+                extend: {
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "hsl(var(--primary))",
+                            foreground: "hsl(var(--primary-foreground))",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(var(--secondary))",
+                            foreground: "hsl(var(--secondary-foreground))",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(var(--destructive))",
+                            foreground: "hsl(var(--destructive-foreground))",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(var(--accent))",
+                            foreground: "hsl(var(--accent-foreground))",
+                        },
+                        popover: {
+                            DEFAULT: "hsl(var(--popover))",
+                            foreground: "hsl(var(--popover-foreground))",
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))",
+                        },
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)",
+                    },
+                    keyframes: {
+                        "accordion-down": {
+                            from: { height: 0 },
+                            to: { height: "var(--radix-accordion-content-height)" },
+                        },
+                        "accordion-up": {
+                            from: { height: "var(--radix-accordion-content-height)" },
+                            to: { height: 0 },
+                        },
+                    },
+                    animation: {
+                        "accordion-down": "accordion-down 0.2s ease-out",
+                        "accordion-up": "accordion-up 0.2s ease-out",
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="antialiased min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div id="app" class="p-4 md:p-8 max-w-[1600px] mx-auto">
+        
+        <!-- Header -->
+        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight flex items-center gap-2">
+                    <i data-lucide="tv" class="w-8 h-8 text-primary"></i>
+                    TVBox 配置生成器
+                </h1>
+                <p class="text-muted-foreground mt-2">
+                    现代化、响应式的 TVBox JSON 配置文件生成工具。支持实时预览与 Base64 导出。
+                </p>
+            </div>
+            <div class="flex gap-2">
+                <button @click="toggleDarkMode" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 w-10">
+                    <i :data-lucide="isDark ? 'sun' : 'moon'" class="w-5 h-5"></i>
+                </button>
+                <a href="https://github.com/sky22333/tools" target="_blank" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-2">
+                    <i data-lucide="github" class="w-4 h-4"></i>
+                    GitHub
+                </a>
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Left Panel: Configuration Form -->
+            <div class="space-y-6">
+                
+                <!-- Global Settings -->
+                <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                    <div class="flex flex-col space-y-1.5 p-6">
+                        <h3 class="text-2xl font-semibold leading-none tracking-tight">全局设置</h3>
+                        <p class="text-sm text-muted-foreground">配置全局参数，如爬虫 Jar 包和背景图片。</p>
+                    </div>
+                    <div class="p-6 pt-0 space-y-4">
+                        <div class="grid gap-2">
+                            <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                爬虫 Jar 包地址 (Spider)
+                            </label>
+                            <input v-model="config.spider" type="text" placeholder="例如: ./custom_spider.jar 或 http://..." class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                        </div>
+                        <div class="grid gap-2">
+                            <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                背景图片地址 (Wallpaper)
+                            </label>
+                            <input v-model="config.wallpaper" type="text" placeholder="例如: https://api.kdcc.cn" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sites Configuration -->
+                <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                    <div class="flex flex-col space-y-1.5 p-6">
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="min-w-0">
+                                <h3 class="text-2xl font-semibold leading-none tracking-tight">视频源 (Sites)</h3>
+                                <p class="text-sm text-muted-foreground mt-1">添加 苹果CMS v10 或其他类型的视频源接口。</p>
+                            </div>
+                            <button @click="addSite" class="shrink-0 whitespace-nowrap inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 gap-2">
+                                <i data-lucide="plus" class="w-4 h-4"></i> 新增源
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-6 pt-0 space-y-4">
+                        <transition-group name="fade" tag="div" class="space-y-4">
+                            <div v-for="(site, index) in config.sites" :key="index" class="group relative grid gap-4 rounded-md border p-4 hover:bg-accent/50 transition-colors">
+                                <div class="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                    <button @click="removeSite(index)" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:bg-destructive hover:text-destructive-foreground h-8 w-8">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                <div class="grid gap-2">
+                                    <label class="text-sm font-medium leading-none">源名称</label>
+                                    <input v-model="site.name" type="text" placeholder="例如: 🎬我的视频源" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                </div>
+                                <div class="grid gap-2">
+                                    <label class="text-sm font-medium leading-none">API 接口地址</label>
+                                    <input v-model="site.api" type="text" placeholder="例如: https://example.com/api.php/provide/vod" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                </div>
+                                <div class="flex items-center gap-4 text-xs text-muted-foreground">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" v-model="site.searchable" :true-value="1" :false-value="0" class="rounded border-gray-300 text-primary focus:ring-primary">
+                                        可搜索
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" v-model="site.quickSearch" :true-value="1" :false-value="0" class="rounded border-gray-300 text-primary focus:ring-primary">
+                                        快速搜索
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" v-model="site.filterable" :true-value="1" :false-value="0" class="rounded border-gray-300 text-primary focus:ring-primary">
+                                        可筛选
+                                    </label>
+                                </div>
+                            </div>
+                        </transition-group>
+                        
+                        <div v-if="config.sites.length === 0" class="text-center py-8 text-muted-foreground border-2 border-dashed rounded-md">
+                            暂无视频源，请点击右上角“新增源”
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parses Configuration -->
+                <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                    <div class="flex flex-col space-y-1.5 p-6">
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="min-w-0">
+                                <h3 class="text-2xl font-semibold leading-none tracking-tight">解析接口 (Parses)</h3>
+                                <p class="text-sm text-muted-foreground mt-1">配置视频聚合解析接口，自动生成常见 Flag。</p>
+                            </div>
+                            <button @click="addParse" class="shrink-0 whitespace-nowrap inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 gap-2">
+                                <i data-lucide="plus" class="w-4 h-4"></i> 新增解析
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-6 pt-0 space-y-4">
+                         <transition-group name="fade" tag="div" class="space-y-4">
+                            <div v-for="(parse, index) in config.parses" :key="index" class="group relative grid gap-4 rounded-md border p-4 hover:bg-accent/50 transition-colors">
+                                <div class="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                    <button @click="removeParse(index)" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:bg-destructive hover:text-destructive-foreground h-8 w-8">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                <div class="grid gap-2">
+                                    <label class="text-sm font-medium leading-none">解析名称</label>
+                                    <input v-model="parse.name" type="text" placeholder="例如: 聚合解析" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                </div>
+                                <div class="grid gap-2">
+                                    <label class="text-sm font-medium leading-none">解析 URL</label>
+                                    <input v-model="parse.url" type="text" placeholder="例如: https://jx.example.com/?url=" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                </div>
+                                <div class="grid gap-2">
+                                    <label class="text-sm font-medium leading-none">平台标识 (Flags)</label>
+                                    <input :value="parse.ext.flag.join(', ')" @input="updateFlags(index, $event.target.value)" type="text" placeholder="用逗号分隔，如: qq, youku, qiyi" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                    <p class="text-xs text-muted-foreground">默认包含: qq, 腾讯, qiyi, 爱奇艺, youku, 优酷, mgtv, 芒果, bilibili...</p>
+                                </div>
+                            </div>
+                        </transition-group>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Panel: Preview & Actions -->
+            <div class="lg:sticky lg:top-8 h-fit space-y-6">
+                
+                <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                    <div class="flex flex-col space-y-1.5 p-6">
+                        <h3 class="text-2xl font-semibold leading-none tracking-tight">配置预览</h3>
+                        <p class="text-sm text-muted-foreground">实时生成的 JSON 配置代码。</p>
+                    </div>
+                    <div class="p-6 pt-0">
+                        <div class="relative">
+                            <pre class="flex w-full rounded-md border border-input bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 overflow-auto h-[500px] font-mono text-xs leading-5">{{ jsonOutput }}</pre>
+                            <div class="absolute top-2 right-2 flex gap-2">
+                                <button @click="copyJson" class="inline-flex items-center justify-center rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 border shadow-sm">
+                                    <i data-lucide="copy" class="w-3 h-3 mr-1"></i> {{ copyText }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 pt-0 flex flex-col gap-3">
+                        <button @click="downloadJson" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full">
+                            <i data-lucide="download" class="w-4 h-4 mr-2"></i> 下载 .json 文件
+                        </button>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                             <button @click="showBase64Modal = true" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                                <i data-lucide="file-code" class="w-4 h-4 mr-2"></i> Base64 导出
+                            </button>
+                             <button @click="resetConfig" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-destructive hover:text-destructive-foreground h-10 px-4 py-2">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4 mr-2"></i> 重置配置
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+        
+        <!-- Base64 Modal -->
+        <div v-if="showBase64Modal" @click.self="showBase64Modal = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+             <div class="rounded-lg border bg-background p-6 shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold">Base64 编码结果</h3>
+                    <button @click="showBase64Modal = false" class="rounded-full p-1 hover:bg-accent">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="grid gap-2">
+                        <label class="text-sm font-medium">无前缀 (推荐)</label>
+                        <div class="flex gap-2 items-center">
+                            <input :value="base64Output" readonly class="flex-1 flex h-9 rounded-md border border-input bg-muted px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                            <button @click="copyTextToClipboard(base64Output)" class="shrink-0 whitespace-nowrap inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-3">
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid gap-2">
+                        <label class="text-sm font-medium">**D 前缀 (旧版兼容)</label>
+                        <div class="flex gap-2 items-center">
+                            <input :value="'**D' + base64Output" readonly class="flex-1 flex h-9 rounded-md border border-input bg-muted px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                            <button @click="copyTextToClipboard('**D' + base64Output)" class="shrink-0 whitespace-nowrap inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-3">
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                     <div class="grid gap-2">
+                        <label class="text-sm font-medium">clan:// 前缀</label>
+                        <div class="flex gap-2 items-center">
+                            <input :value="'clan://' + base64Output" readonly class="flex-1 flex h-9 rounded-md border border-input bg-muted px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                            <button @click="copyTextToClipboard('clan://' + base64Output)" class="shrink-0 whitespace-nowrap inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-3">
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                </div>
+             </div>
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
+
+        createApp({
+            setup() {
+                // Default Flags
+                const defaultFlags = [
+                    "qq", "腾讯", "qiyi", "爱奇艺", "奇艺", "youku", "优酷", 
+                    "mgtv", "芒果", "letv", "乐视", "pptv", "PPTV", 
+                    "sohu", "bilibili", "哔哩哔哩", "哔哩"
+                ];
+
+                // Initial Config State
+                const config = ref({
+                    spider: "",
+                    wallpaper: "https://api.kdcc.cn",
+                    sites: [
+                        { key: "demo_site", name: "🎬 示例源", type: 1, api: "https://example.com/api.php/provide/vod", searchable: 1, quickSearch: 1, filterable: 1 }
+                    ],
+                    parses: [
+                         { name: "聚合解析", type: 0, url: "https://example.com/?url=", ext: { flag: [...defaultFlags] } }
+                    ]
+                });
+
+                // UI State
+                const copyText = ref("复制 JSON");
+                const showBase64Modal = ref(false);
+                const isDark = ref(false);
+
+                // Computed JSON Output
+                const jsonOutput = computed(() => {
+                    // Ensure keys are unique if user doesn't provide them
+                    const processedSites = config.value.sites.map((site, idx) => ({
+                        ...site,
+                        key: site.key || `site_${idx}_${Date.now()}`
+                    }));
+                    
+                    const finalConfig = {
+                        ...config.value,
+                        sites: processedSites
+                    };
+                    return JSON.stringify(finalConfig, null, 2);
+                });
+                
+                // Computed Base64 Output
+                const base64Output = computed(() => {
+                    // Use standard btoa with UTF-8 encoding fix
+                    const str = jsonOutput.value;
+                    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+                        function toSolidBytes(match, p1) {
+                            return String.fromCharCode('0x' + p1);
+                    }));
+                });
+
+                // Methods
+                const addSite = () => {
+                    config.value.sites.push({
+                        key: "",
+                        name: "",
+                        type: 1,
+                        api: "",
+                        searchable: 1,
+                        quickSearch: 1,
+                        filterable: 1
+                    });
+                };
+
+                const removeSite = (index) => {
+                    config.value.sites.splice(index, 1);
+                };
+
+                const addParse = () => {
+                    config.value.parses.push({
+                        name: "新解析接口",
+                        type: 0,
+                        url: "",
+                        ext: { flag: [...defaultFlags] }
+                    });
+                };
+
+                const removeParse = (index) => {
+                    config.value.parses.splice(index, 1);
+                };
+
+                const updateFlags = (index, value) => {
+                    // Split by comma and trim
+                    const flags = value.split(/,|，/).map(s => s.trim()).filter(s => s);
+                    config.value.parses[index].ext.flag = flags;
+                };
+
+                const copyJson = () => {
+                    navigator.clipboard.writeText(jsonOutput.value).then(() => {
+                        copyText.value = "已复制!";
+                        setTimeout(() => copyText.value = "复制 JSON", 2000);
+                    });
+                };
+                
+                const copyTextToClipboard = (text) => {
+                     navigator.clipboard.writeText(text).then(() => {
+                        alert("已复制到剪贴板");
+                    });
+                }
+
+                const downloadJson = () => {
+                    const blob = new Blob([jsonOutput.value], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "tvbox.json";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                };
+                
+                const resetConfig = () => {
+                    if(confirm("确定要重置所有配置吗？")) {
+                        config.value = {
+                            spider: "",
+                            wallpaper: "https://api.kdcc.cn",
+                            sites: [],
+                            parses: []
+                        };
+                        addSite(); // Add one empty site
+                        addParse(); // Add one default parse
+                    }
+                };
+                
+                const toggleDarkMode = () => {
+                    isDark.value = !isDark.value;
+                    if (isDark.value) {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                };
+
+                // Watchers for Lucide icons updates
+                watch(() => [config.value.sites.length, config.value.parses.length, showBase64Modal.value], () => {
+                    nextTick(() => {
+                        lucide.createIcons();
+                    });
+                });
+
+                onMounted(() => {
+                    lucide.createIcons();
+                    // Check system preference for dark mode
+                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                        isDark.value = true;
+                        document.documentElement.classList.add('dark');
+                    }
+                });
+
+                return {
+                    config,
+                    jsonOutput,
+                    base64Output,
+                    copyText,
+                    showBase64Modal,
+                    isDark,
+                    addSite,
+                    removeSite,
+                    addParse,
+                    removeParse,
+                    updateFlags,
+                    copyJson,
+                    copyTextToClipboard,
+                    downloadJson,
+                    resetConfig,
+                    toggleDarkMode
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
