@@ -2021,33 +2021,35 @@
             };
 
             return (
-                <div className="min-h-screen font-sans text-slate-900 bg-gray-50 selection:bg-slate-900 selection:text-white dark:bg-slate-900 dark:text-white">
+                <div className="h-screen flex flex-col overflow-hidden font-sans text-slate-900 bg-gray-50 selection:bg-slate-900 selection:text-white dark:bg-slate-900 dark:text-white">
                     {view === 'dashboard' && (
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                            <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div>
-                                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">在线录屏工作室</h1>
-                                    <p className="text-slate-500 mt-1 dark:text-slate-400">一站式网页录屏、截图、编辑工具</p>
+                        <div className="flex-1 overflow-y-auto w-full">
+                            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">在线录屏工作室</h1>
+                                        <p className="text-slate-500 mt-1 dark:text-slate-400">一站式网页录屏、截图、编辑工具</p>
+                                    </div>
+                                    <HeaderControls theme={theme} toggleTheme={toggleTheme} />
                                 </div>
-                                <HeaderControls theme={theme} toggleTheme={toggleTheme} />
+                                <DashboardView 
+                                    recordings={recordings} 
+                                    onNewRecording={() => setIsSetupOpen(true)}
+                                    onSnapshot={handleSnapshot}
+                                    onEdit={(rec) => { setActiveRecording(rec); setView(rec.type === 'image' ? 'image-editor' : 'editor'); }}
+                                    onDelete={async (id) => {
+                                        await dbHelper.delete(id);
+                                        setRecordings(prev => prev.filter(r => r.id !== id));
+                                    }}
+                                    onPreview={(rec) => { setActiveRecording(rec); setView(rec.type === 'image' ? 'image-editor' : 'editor'); }}
+                                    isRecording={isRecording}
+                                />
                             </div>
-                            <DashboardView 
-                                recordings={recordings} 
-                                onNewRecording={() => setIsSetupOpen(true)}
-                                onSnapshot={handleSnapshot}
-                                onEdit={(rec) => { setActiveRecording(rec); setView(rec.type === 'image' ? 'image-editor' : 'editor'); }}
-                                onDelete={async (id) => {
-                                    await dbHelper.delete(id);
-                                    setRecordings(prev => prev.filter(r => r.id !== id));
-                                }}
-                                onPreview={(rec) => { setActiveRecording(rec); setView(rec.type === 'image' ? 'image-editor' : 'editor'); }}
-                                isRecording={isRecording}
-                            />
                         </div>
                     )}
 
                     {view === 'editor' && activeRecording && (
-                        <div className="max-w-[1920px] mx-auto px-4 py-4 h-screen overflow-hidden">
+                        <div className="flex-1 w-full max-w-[1920px] mx-auto px-4 py-4 overflow-hidden">
                             <EditorView 
                                 recording={activeRecording} 
                                 onBack={() => { setView('dashboard'); setActiveRecording(null); }}
@@ -2060,7 +2062,7 @@
                     )}
                     
                     {view === 'image-editor' && activeRecording && (
-                         <div className="max-w-[1920px] mx-auto px-4 py-4 h-screen overflow-hidden">
+                         <div className="flex-1 w-full max-w-[1920px] mx-auto px-4 py-4 overflow-hidden">
                             <ImageEditorView
                                 recording={activeRecording}
                                 onBack={() => { setView('dashboard'); setActiveRecording(null); }}
