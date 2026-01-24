@@ -1129,23 +1129,32 @@
             }, [duration, keyframes]);
 
             return (
-                <div className="h-[calc(100vh-6rem)] flex flex-col gap-4 animate-fade-in">
+                <div className="lg:h-[calc(100vh-6rem)] h-auto flex flex-col gap-4 animate-fade-in pb-20 lg:pb-0">
                     {/* Top Bar */}
-                    <div className="flex items-center justify-between bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm shrink-0 dark:bg-slate-800 dark:border-slate-700">
-                        <div className="flex items-center gap-4">
-                            <Button variant="ghost" onClick={onBack} icon={ChevronLeft}>返回</Button>
-                            <div className="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
-                            <div className="flex flex-col">
-                                <h2 className="font-bold text-slate-800 dark:text-white">{recording.title}</h2>
-                                <span className="text-xs text-slate-500 font-mono dark:text-slate-400">{recording.slug}</span>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white px-4 sm:px-6 py-3 rounded-xl border border-slate-200 shadow-sm shrink-0 gap-4 sm:gap-0 dark:bg-slate-800 dark:border-slate-700">
+                        <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
+                            <div className="flex items-center gap-4">
+                                <Button variant="ghost" onClick={onBack} icon={ChevronLeft} className="shrink-0">返回</Button>
+                                <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 shrink-0"></div>
+                                <div className="flex flex-col min-w-0">
+                                    <h2 className="font-bold text-slate-800 truncate max-w-[150px] sm:max-w-xs dark:text-white">{recording.title}</h2>
+                                    <span className="text-xs text-slate-500 font-mono hidden sm:block dark:text-slate-400">{recording.slug}</span>
+                                </div>
+                            </div>
+                            {/* Mobile Theme Toggle */}
+                            <div className="sm:hidden">
+                                <HeaderControls theme={theme} toggleTheme={toggleTheme} />
                             </div>
                         </div>
-                        <div className="flex gap-2 items-center">
-                            <HeaderControls theme={theme} toggleTheme={toggleTheme} />
-                            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2"></div>
-                             <div className="flex bg-slate-100 rounded-lg p-1 mr-4 dark:bg-slate-900">
-                                <button onClick={() => setActiveTab('editor')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'editor' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>视频编辑</button>
-                                <button onClick={() => setActiveTab('notes')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'notes' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>备注文档</button>
+                        
+                        <div className="flex gap-2 items-center w-full sm:w-auto justify-end">
+                            <div className="hidden sm:block">
+                                <HeaderControls theme={theme} toggleTheme={toggleTheme} />
+                            </div>
+                            <div className="hidden sm:block w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2"></div>
+                             <div className="flex bg-slate-100 rounded-lg p-1 mr-2 sm:mr-4 shrink-0 dark:bg-slate-900">
+                                <button onClick={() => setActiveTab('editor')} className={`px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${activeTab === 'editor' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>编辑</button>
+                                <button onClick={() => setActiveTab('notes')} className={`px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${activeTab === 'notes' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>备注</button>
                             </div>
                             <Button 
                                 onClick={() => {
@@ -1155,17 +1164,18 @@
                                 }} 
                                 disabled={isExporting} 
                                 icon={Download}
-                                className={isExporting ? "opacity-80 cursor-wait" : ""}
+                                className={`shrink-0 ${isExporting ? "opacity-80 cursor-wait" : ""}`}
                             >
-                                {isExporting ? `导出中 ${Math.round(exportProgress)}%` : '导出 MP4'}
+                                {isExporting ? `${Math.round(exportProgress)}%` : <span className="hidden sm:inline">导出 MP4</span>}
+                                {!isExporting && <span className="sm:hidden">导出</span>}
                             </Button>
                         </div>
                     </div>
 
                     {activeTab === 'editor' ? (
-                        <div className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
+                        <div className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 lg:min-h-0">
                             {/* Main Preview Area */}
-                            <div className="lg:col-span-2 flex flex-col gap-4 h-full min-h-0">
+                            <div className="lg:col-span-2 flex flex-col gap-4 h-[60vh] lg:h-full lg:min-h-0">
                                 <div className="flex-grow bg-slate-950 rounded-xl overflow-hidden relative flex items-center justify-center border border-slate-800 shadow-inner group min-h-0">
                                     <video 
                                         ref={videoRef}
@@ -2091,7 +2101,7 @@
                     )}
 
                     {view === 'editor' && activeRecording && (
-                        <div className="flex-1 w-full max-w-[1920px] mx-auto px-4 py-4 overflow-hidden">
+                        <div className="flex-1 w-full max-w-[1920px] mx-auto px-4 py-4 overflow-y-auto lg:overflow-hidden">
                             <EditorView 
                                 recording={activeRecording} 
                                 onBack={() => { setView('dashboard'); setActiveRecording(null); }}
