@@ -438,6 +438,7 @@
 
         const ImageEditorView = ({ recording, onBack, onSave, theme, toggleTheme }) => {
             const canvasRef = useRef(null);
+            const cropBoxRef = useRef(null);
             const containerRef = useRef(null);
             const [mode, setMode] = useState('view'); // view, crop, mosaic
             const [cropRect, setCropRect] = useState(null);
@@ -523,7 +524,15 @@
                          if (newRect.x + newRect.w > maxW) newRect.w = maxW - newRect.x;
                          if (newRect.y + newRect.h > maxH) newRect.h = maxH - newRect.y;
 
-                         setCropRect(newRect);
+                         // Optimization: Transient State
+                         // Store in ref and update DOM directly to avoid re-renders
+                         dragStartRectRef.current.transient = newRect;
+                         if (cropBoxRef.current) {
+                             cropBoxRef.current.style.left = `${newRect.x}px`;
+                             cropBoxRef.current.style.top = `${newRect.y}px`;
+                             cropBoxRef.current.style.width = `${newRect.w}px`;
+                             cropBoxRef.current.style.height = `${newRect.h}px`;
+                         }
                     } else if (mode === 'mosaic') {
                         applyMosaicPath(lastPosRef.current, coords);
                         lastPosRef.current = coords;
@@ -533,7 +542,12 @@
                 const handleWindowUp = () => {
                     setIsDragging(false);
                     dragActionRef.current = null;
-                    if (mode === 'mosaic') {
+                    
+                    if (mode === 'crop' && dragStartRectRef.current?.transient) {
+                        // Commit transient state
+                        setCropRect(dragStartRectRef.current.transient);
+                        delete dragStartRectRef.current.transient;
+                    } else if (mode === 'mosaic') {
                         saveHistory();
                     }
                 };
@@ -674,66 +688,110 @@
                  const canvas = canvasRef.current;
                  const ctx = canvas.getContext('2d');
                  const blockSize = 15;
+                 const { width, height } = canvas;
                  
-                 const dist = Math.hypot(end.x - start.x, end.y - start.y);
-                 const steps = Math.ceil(dist / (brushSize / 4)) || 1;
+                 const r = brushSize / 2;
+                 const minX = Math.floor(Math.min(start.x, end.x) - r);
+                 const minY = Math.floor(Math.min(start.y, end.y) - r);
+                 const maxX = Math.ceil(Math.max(start.x, end.x) + r);
+                 const maxY = Math.ceil(Math.max(start.y, end.y) + r);
                  
-                 for (let i = 0; i <= steps; i++) {
-                     const t = i / steps;
-                     const cx = start.x + (end.x - start.x) * t;
-                     const cy = start.y + (end.y - start.y) * t;
-                     
-                     // Apply mosaic around (cx, cy)
-                     const r = brushSize / 2;
-                     const minGx = Math.floor((cx - r) / blockSize) * blockSize;
-                     const maxGx = Math.floor((cx + r) / blockSize) * blockSize;
-                     const minGy = Math.floor((cy - r) / blockSize) * blockSize;
-                     const maxGy = Math.floor((cy + r) / blockSize) * blockSize;
-                     
-                     for (let gx = minGx; gx <= maxGx; gx += blockSize) {
-                         for (let gy = minGy; gy <= maxGy; gy += blockSize) {
-                             const bcx = gx + blockSize/2;
-                             const bcy = gy + blockSize/2;
-                             if (Math.hypot(bcx - cx, bcy - cy) <= r) {
-                                 const key = `${gx},${gy}`;
-                                 if (!processedBlocksRef.current.has(key)) {
-                                     pixelateBlock(ctx, gx, gy, blockSize);
-                                     processedBlocksRef.current.add(key);
+                 const x = Math.max(0, minX);
+                 const y = Math.max(0, minY);
+                 const w = Math.min(width, maxX) - x;
+                 const h = Math.min(height, maxY) - y;
+                 
+                 if (w <= 0 || h <= 0) return;
+                 
+                 // Optimization: Batch pixel processing to reduce GPU-CPU communication
+                 // Read once, modify in memory, write once
+                 const imageData = ctx.getImageData(x, y, w, h);
+                 const data = imageData.data;
+                 const sourceWidth = w;
+                 
+                 const startGx = Math.floor(x / blockSize) * blockSize;
+                 const startGy = Math.floor(y / blockSize) * blockSize;
+                 const endGx = Math.floor((x + w) / blockSize) * blockSize;
+                 const endGy = Math.floor((y + h) / blockSize) * blockSize;
+                 
+                 let dirty = false;
+
+                 for (let gx = startGx; gx <= endGx; gx += blockSize) {
+                     for (let gy = startGy; gy <= endGy; gy += blockSize) {
+                         const bcx = gx + blockSize/2;
+                         const bcy = gy + blockSize/2;
+                         
+                         // Distance to segment
+                         const l2 = (end.x - start.x)**2 + (end.y - start.y)**2;
+                         let distSq;
+                         if (l2 === 0) distSq = (bcx - start.x)**2 + (bcy - start.y)**2;
+                         else {
+                             let t = ((bcx - start.x) * (end.x - start.x) + (bcy - start.y) * (end.y - start.y)) / l2;
+                             t = Math.max(0, Math.min(1, t));
+                             distSq = (bcx - (start.x + t * (end.x - start.x)))**2 + (bcy - (start.y + t * (end.y - start.y)))**2;
+                         }
+                         
+                         if (distSq <= r*r) {
+                             const key = `${gx},${gy}`;
+                             if (!processedBlocksRef.current.has(key)) {
+                                 const bx = gx - x;
+                                 const by = gy - y;
+                                 
+                                 // Sample 5x5 center
+                                 const sampleSize = Math.min(blockSize, 5);
+                                 const offset = Math.floor((blockSize - sampleSize)/2);
+                                 
+                                 const sx = bx + offset;
+                                 const sy = by + offset;
+                                 
+                                 const validSx = Math.max(0, sx);
+                                 const validSy = Math.max(0, sy);
+                                 const validSw = Math.min(sampleSize, w - validSx);
+                                 const validSh = Math.min(sampleSize, h - validSy);
+                                 
+                                 let rSum=0, gSum=0, bSum=0, count=0;
+                                 
+                                 if (validSw > 0 && validSh > 0) {
+                                     for(let py = validSy; py < validSy + validSh; py++) {
+                                         for(let px = validSx; px < validSx + validSw; px++) {
+                                             const i = (py * sourceWidth + px) * 4;
+                                             rSum += data[i];
+                                             gSum += data[i+1];
+                                             bSum += data[i+2];
+                                             count++;
+                                         }
+                                     }
+                                     
+                                     if (count > 0) {
+                                         const avgR = Math.round(rSum/count);
+                                         const avgG = Math.round(gSum/count);
+                                         const avgB = Math.round(bSum/count);
+                                         
+                                         const fillX = Math.max(0, bx);
+                                         const fillY = Math.max(0, by);
+                                         const fillW = Math.min(blockSize, w - fillX);
+                                         const fillH = Math.min(blockSize, h - fillY);
+                                         
+                                         for(let py = fillY; py < fillY + fillH; py++) {
+                                             for(let px = fillX; px < fillX + fillW; px++) {
+                                                 const i = (py * sourceWidth + px) * 4;
+                                                 data[i] = avgR;
+                                                 data[i+1] = avgG;
+                                                 data[i+2] = avgB;
+                                             }
+                                         }
+                                         dirty = true;
+                                     }
                                  }
+                                 processedBlocksRef.current.add(key);
                              }
                          }
                      }
                  }
-            };
-
-            const pixelateBlock = (ctx, x, y, size) => {
-                try {
-                    if (x < 0 || y < 0 || x >= ctx.canvas.width || y >= ctx.canvas.height) return;
-                    
-                    // Optimization: Read 5x5 center sample
-                    const sampleSize = Math.min(size, 5);
-                    const offset = Math.floor((size - sampleSize)/2);
-                    
-                    const rx = Math.max(0, x + offset);
-                    const ry = Math.max(0, y + offset);
-                    const rw = Math.min(sampleSize, ctx.canvas.width - rx);
-                    const rh = Math.min(sampleSize, ctx.canvas.height - ry);
-                    
-                    if (rw <= 0 || rh <= 0) return;
-
-                    const data = ctx.getImageData(rx, ry, rw, rh);
-                    let r=0, g=0, b=0, count=0;
-                    for(let i=0; i<data.data.length; i+=4) {
-                        r += data.data[i];
-                        g += data.data[i+1];
-                        b += data.data[i+2];
-                        count++;
-                    }
-                    if (count > 0) {
-                        ctx.fillStyle = `rgb(${Math.round(r/count)},${Math.round(g/count)},${Math.round(b/count)})`;
-                        ctx.fillRect(x, y, size, size);
-                    }
-                } catch(e) {}
+                 
+                 if (dirty) {
+                     ctx.putImageData(imageData, x, y);
+                 }
             };
 
             const confirmCrop = () => {
@@ -874,7 +932,7 @@
                                     <>
                                         {!cropRect && <div className="absolute inset-0 bg-black/50 pointer-events-none" style={{ touchAction: 'none' }}></div>}
                                         {cropRect && (
-                                            <div className="absolute bg-transparent shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]"
+                                            <div ref={cropBoxRef} className="absolute bg-transparent shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]"
                                                  style={{ 
                                                      left: cropRect.x, 
                                                      top: cropRect.y, 
