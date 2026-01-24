@@ -83,9 +83,68 @@
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo, useCallback } = React;
-        const { Video, Mic, Monitor, Settings, X, Download, Play, Pause, Plus, Trash2, ChevronLeft, Search, Edit2, Eye, FileText, MoreHorizontal, Moon, Sun, Github } = (typeof lucide !== 'undefined' && lucide.icons) ? lucide.icons : lucide;
+        const { Video, Mic, Monitor, Settings, X, Download, Play, Pause, Plus, Trash2, ChevronLeft, Search, Edit2, Eye, FileText, MoreHorizontal, Moon, Sun, Github, Camera, Crop, Zap, Check, RotateCcw, Image: ImageIcon, Undo, Save } = (typeof lucide !== 'undefined' && lucide.icons) ? lucide.icons : lucide;
         // Fix Mp4Muxer reference
         const Mp4Muxer = window.Mp4Muxer;
+
+        // --- DB Helper ---
+        const dbHelper = {
+            dbName: 'RecorderDB',
+            version: 1,
+            init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.version);
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains('recordings')) {
+                            db.createObjectStore('recordings', { keyPath: 'id' });
+                        }
+                    };
+                    request.onsuccess = (e) => resolve(e.target.result);
+                    request.onerror = (e) => reject(e);
+                });
+            },
+            async getAll() {
+                const db = await this.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('recordings', 'readonly');
+                    const store = tx.objectStore('recordings');
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+            async add(item) {
+                const db = await this.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('recordings', 'readwrite');
+                    const store = tx.objectStore('recordings');
+                    const request = store.add(item);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+            async delete(id) {
+                const db = await this.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('recordings', 'readwrite');
+                    const store = tx.objectStore('recordings');
+                    const request = store.delete(id);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            },
+             async update(item) {
+                const db = await this.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('recordings', 'readwrite');
+                    const store = tx.objectStore('recordings');
+                    const request = store.put(item);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            }
+        };
 
         // --- Components ---
 
@@ -250,7 +309,7 @@
 
         // --- Views ---
 
-        const DashboardView = ({ recordings, onNewRecording, onEdit, onDelete, onPreview, isRecording }) => {
+        const DashboardView = ({ recordings, onNewRecording, onSnapshot, onEdit, onDelete, onPreview, isRecording }) => {
             const [searchTerm, setSearchTerm] = useState('');
             
             const filteredRecordings = recordings.filter(r => 
@@ -268,15 +327,20 @@
                             </div>
                             <input 
                                 type="text" 
-                                placeholder="搜索录屏..." 
+                                placeholder="搜索录屏或截图..." 
                                 className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent sm:text-sm transition-all shadow-sm group-hover:shadow-md dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder-slate-500 dark:focus:ring-slate-500"
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <Button onClick={onNewRecording} icon={Video} disabled={isRecording} className="shadow-lg hover:shadow-xl hover:scale-105 transition-transform py-3 px-6">
-                            新建录制
-                        </Button>
+                        <div className="flex gap-3">
+                            <Button onClick={onSnapshot} icon={Camera} className="shadow-lg hover:shadow-xl hover:scale-105 transition-transform py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white border-transparent">
+                                屏幕截图
+                            </Button>
+                            <Button onClick={onNewRecording} icon={Video} disabled={isRecording} className="shadow-lg hover:shadow-xl hover:scale-105 transition-transform py-3 px-6">
+                                新建录制
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Grid */}
@@ -285,8 +349,8 @@
                             <div className="mx-auto w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 dark:bg-slate-700">
                                 <Icon icon={Video} size={32} className="text-slate-300 dark:text-slate-500" />
                             </div>
-                            <h3 className="text-lg font-medium text-slate-900 dark:text-white">暂无录屏内容</h3>
-                            <p className="text-slate-500 mt-1 dark:text-slate-400">点击右上角按钮开始您的第一次录制</p>
+                            <h3 className="text-lg font-medium text-slate-900 dark:text-white">暂无内容</h3>
+                            <p className="text-slate-500 mt-1 dark:text-slate-400">开始您的第一次录制或截图</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -313,7 +377,7 @@
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                                                <Icon icon={FileText} size={14} />
+                                                <Icon icon={rec.type === 'image' ? ImageIcon : FileText} size={14} />
                                                 <span className="font-mono truncate max-w-[120px]">{rec.slug}</span>
                                             </div>
                                             {rec.status === 'draft' && (
@@ -323,26 +387,545 @@
                                             )}
                                         </div>
                                         <div className="aspect-video bg-slate-100 rounded-lg overflow-hidden relative group cursor-pointer border border-slate-200 dark:bg-slate-900 dark:border-slate-700" onClick={() => onPreview(rec)}>
-                                            <video src={rec.url} className="w-full h-full object-cover" />
+                                            {rec.type === 'image' ? (
+                                                <img src={rec.url} className="w-full h-full object-contain bg-slate-50 dark:bg-slate-950" />
+                                            ) : (
+                                                <video src={rec.url} className="w-full h-full object-cover" />
+                                            )}
+                                            
                                             <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-colors flex items-center justify-center">
                                                 <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-300 dark:bg-slate-800/90">
-                                                    <Icon icon={Play} size={20} className="text-slate-900 ml-1 dark:text-white" />
+                                                    <Icon icon={rec.type === 'image' ? Eye : Play} size={20} className="text-slate-900 ml-1 dark:text-white" />
                                                 </div>
                                             </div>
-                                            <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-md font-mono">
-                                                {rec.duration}
-                                            </div>
+                                            {rec.duration && (
+                                                <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-md font-mono">
+                                                    {rec.duration}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex items-center text-xs text-slate-400 gap-2">
                                             <span>{rec.date}</span>
                                             <span>•</span>
-                                            <span>Video</span>
+                                            <span>{rec.type === 'image' ? 'Image' : 'Video'}</span>
                                         </div>
                                     </div>
                                 </Card>
                             ))}
                         </div>
                     )}
+                </div>
+            );
+        };
+
+        // --- Helpers ---
+        const Tooltip = ({ content, children }) => {
+            const [isVisible, setIsVisible] = useState(false);
+            return (
+                <div className="relative flex items-center" 
+                     onMouseEnter={() => setIsVisible(true)} 
+                     onMouseLeave={() => setIsVisible(false)}>
+                    {children}
+                    {isVisible && (
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-xs rounded shadow-lg whitespace-nowrap z-50 animate-fade-in pointer-events-none">
+                            {content}
+                            <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-slate-900"></div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const ImageEditorView = ({ recording, onBack, onSave, theme, toggleTheme }) => {
+            const canvasRef = useRef(null);
+            const containerRef = useRef(null);
+            const [mode, setMode] = useState('view'); // view, crop, mosaic
+            const [cropRect, setCropRect] = useState(null);
+            const [isDragging, setIsDragging] = useState(false);
+            const startPosRef = useRef({ x: 0, y: 0 }); 
+            const dragStartRectRef = useRef(null); // Store rect at start of drag
+            const dragActionRef = useRef(null); // 'move', 'create', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'
+            
+            const [history, setHistory] = useState([]); // Array of ImageData
+            const [historyIndex, setHistoryIndex] = useState(-1);
+            const [scale, setScale] = useState(1);
+            const [brushSize, setBrushSize] = useState(20);
+            
+            // To prevent repetitive processing in same stroke
+            const processedBlocksRef = useRef(new Set());
+            const lastPosRef = useRef(null);
+            
+            // Initialize Crop Box
+            useEffect(() => {
+                if (mode === 'crop' && !cropRect && canvasRef.current) {
+                    const { width, height } = canvasRef.current;
+                    const padding = Math.min(width, height) * 0.1;
+                    setCropRect({
+                        x: padding,
+                        y: padding,
+                        w: width - padding * 2,
+                        h: height - padding * 2
+                    });
+                }
+            }, [mode]);
+
+            // Global Drag Listeners
+            useEffect(() => {
+                const handleWindowMove = (e) => {
+                    if (!isDragging) return;
+                    e.preventDefault(); // Prevent scrolling on touch
+                    
+                    const coords = getCoords(e);
+                    const action = dragActionRef.current;
+                    
+                    if (mode === 'crop' && cropRect) {
+                         const startX = startPosRef.current.x;
+                         const startY = startPosRef.current.y;
+                         const dx = coords.x - startX;
+                         const dy = coords.y - startY;
+                         const startRect = dragStartRectRef.current;
+
+                         let newRect = { ...startRect };
+
+                         // Bounds
+                         const maxW = canvasRef.current.width;
+                         const maxH = canvasRef.current.height;
+
+                         if (action === 'move') {
+                             newRect.x = Math.max(0, Math.min(maxW - newRect.w, startRect.x + dx));
+                             newRect.y = Math.max(0, Math.min(maxH - newRect.h, startRect.y + dy));
+                         } else if (action === 'create') {
+                             newRect.w = Math.abs(dx);
+                             newRect.h = Math.abs(dy);
+                             newRect.x = dx < 0 ? startX + dx : startX;
+                             newRect.y = dy < 0 ? startY + dy : startY;
+                         } else {
+                             // Resize logic
+                             if (action.includes('n')) {
+                                 const h = startRect.h - dy;
+                                 if (h > 10) { newRect.y = startRect.y + dy; newRect.h = h; }
+                             }
+                             if (action.includes('s')) {
+                                 newRect.h = Math.max(10, startRect.h + dy);
+                             }
+                             if (action.includes('w')) {
+                                 const w = startRect.w - dx;
+                                 if (w > 10) { newRect.x = startRect.x + dx; newRect.w = w; }
+                             }
+                             if (action.includes('e')) {
+                                 newRect.w = Math.max(10, startRect.w + dx);
+                             }
+                         }
+                         
+                         // Constrain to canvas
+                         if (newRect.x < 0) { newRect.w += newRect.x; newRect.x = 0; }
+                         if (newRect.y < 0) { newRect.h += newRect.y; newRect.y = 0; }
+                         if (newRect.x + newRect.w > maxW) newRect.w = maxW - newRect.x;
+                         if (newRect.y + newRect.h > maxH) newRect.h = maxH - newRect.y;
+
+                         setCropRect(newRect);
+                    } else if (mode === 'mosaic') {
+                        applyMosaicPath(lastPosRef.current, coords);
+                        lastPosRef.current = coords;
+                    }
+                };
+
+                const handleWindowUp = () => {
+                    setIsDragging(false);
+                    dragActionRef.current = null;
+                    if (mode === 'mosaic') {
+                        saveHistory();
+                    }
+                };
+
+                if (isDragging) {
+                    window.addEventListener('mousemove', handleWindowMove);
+                    window.addEventListener('mouseup', handleWindowUp);
+                    window.addEventListener('touchmove', handleWindowMove, { passive: false });
+                    window.addEventListener('touchend', handleWindowUp);
+                }
+
+                return () => {
+                    window.removeEventListener('mousemove', handleWindowMove);
+                    window.removeEventListener('mouseup', handleWindowUp);
+                    window.removeEventListener('touchmove', handleWindowMove);
+                    window.removeEventListener('touchend', handleWindowUp);
+                };
+            }, [isDragging, mode]); // scale dependency is inside getCoords which reads ref/state? No, getCoords uses state `scale`.
+            // WARNING: getCoords uses `scale` state. If `scale` changes, `getCoords` in effect might be stale if effect doesn't depend on it.
+            // But dragging usually doesn't change scale.
+            // However, `getCoords` is defined outside effect.
+            // Better to use a ref for scale or include it in dependency.
+            // I will include `scale` in dependency array of this effect.
+
+            // Load initial image
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                img.src = recording.url;
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    saveHistory();
+                    fitToScreen(img.width, img.height);
+                };
+            }, []);
+
+            const fitToScreen = (w, h) => {
+                if (!containerRef.current) return;
+                const cw = containerRef.current.clientWidth;
+                const ch = containerRef.current.clientHeight;
+                const padding = 40;
+                const availableW = cw - padding;
+                const availableH = ch - padding;
+                
+                const scaleW = availableW / w;
+                const scaleH = availableH / h;
+                const newScale = Math.min(scaleW, scaleH, 1); // Don't scale up initially
+                setScale(newScale);
+            };
+
+            const saveHistory = () => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const newHistory = history.slice(0, historyIndex + 1);
+                newHistory.push(data);
+                if (newHistory.length > 20) newHistory.shift(); // Limit history
+                setHistory(newHistory);
+                setHistoryIndex(newHistory.length - 1);
+            };
+
+            const undo = () => {
+                if (historyIndex > 0) {
+                    const newIndex = historyIndex - 1;
+                    const data = history[newIndex];
+                    const canvas = canvasRef.current;
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = data.width;
+                    canvas.height = data.height;
+                    ctx.putImageData(data, 0, 0);
+                    setHistoryIndex(newIndex);
+                    // Reset tool states
+                    setCropRect(null);
+                }
+            };
+
+            // --- Tool Logic ---
+            
+            const getCoords = (e) => {
+                const rect = canvasRef.current.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: (clientX - rect.left) / scale,
+                    y: (clientY - rect.top) / scale
+                };
+            };
+
+            const startDrag = (e, action) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                setIsDragging(true);
+                const coords = getCoords(e);
+                startPosRef.current = coords;
+                lastPosRef.current = coords;
+                dragActionRef.current = action;
+                
+                if (mode === 'crop') {
+                    if (action === 'create') {
+                         setCropRect({ x: coords.x, y: coords.y, w: 0, h: 0 });
+                         dragStartRectRef.current = { x: coords.x, y: coords.y, w: 0, h: 0 };
+                    } else {
+                         dragStartRectRef.current = { ...cropRect };
+                    }
+                } else if (mode === 'mosaic') {
+                    processedBlocksRef.current.clear();
+                    applyMosaicPath(coords, coords);
+                }
+            };
+            
+            const handleMouseDown = (e) => {
+                if (mode === 'view') return;
+                // If crop mode and clicking outside crop rect, start create?
+                // But we have default rect now.
+                // Let's say clicking on canvas starts 'create' only if we don't hit the box.
+                // But box handles this.
+                // So this handler is for "Canvas Background".
+                if (mode === 'crop') {
+                    // Clicking outside existing crop box resets it and starts new drag
+                    startDrag(e, 'create');
+                } else {
+                    startDrag(e, 'mosaic');
+                }
+            };
+
+            // We no longer need handleMouseMove/Up here as they are global now, 
+            // BUT we still need them attached to canvas for initial events? 
+            // No, the window listener is added when isDragging=true.
+            // So we only need onMouseDown on elements to START drag.
+            
+            // ... (keep applyMosaicPath and pixelateBlock)
+
+            const applyMosaicPath = (start, end) => {
+                 const canvas = canvasRef.current;
+                 const ctx = canvas.getContext('2d');
+                 const blockSize = 15;
+                 
+                 const dist = Math.hypot(end.x - start.x, end.y - start.y);
+                 const steps = Math.ceil(dist / (brushSize / 4)) || 1;
+                 
+                 for (let i = 0; i <= steps; i++) {
+                     const t = i / steps;
+                     const cx = start.x + (end.x - start.x) * t;
+                     const cy = start.y + (end.y - start.y) * t;
+                     
+                     // Apply mosaic around (cx, cy)
+                     const r = brushSize / 2;
+                     const minGx = Math.floor((cx - r) / blockSize) * blockSize;
+                     const maxGx = Math.floor((cx + r) / blockSize) * blockSize;
+                     const minGy = Math.floor((cy - r) / blockSize) * blockSize;
+                     const maxGy = Math.floor((cy + r) / blockSize) * blockSize;
+                     
+                     for (let gx = minGx; gx <= maxGx; gx += blockSize) {
+                         for (let gy = minGy; gy <= maxGy; gy += blockSize) {
+                             const bcx = gx + blockSize/2;
+                             const bcy = gy + blockSize/2;
+                             if (Math.hypot(bcx - cx, bcy - cy) <= r) {
+                                 const key = `${gx},${gy}`;
+                                 if (!processedBlocksRef.current.has(key)) {
+                                     pixelateBlock(ctx, gx, gy, blockSize);
+                                     processedBlocksRef.current.add(key);
+                                 }
+                             }
+                         }
+                     }
+                 }
+            };
+
+            const pixelateBlock = (ctx, x, y, size) => {
+                try {
+                    if (x < 0 || y < 0 || x >= ctx.canvas.width || y >= ctx.canvas.height) return;
+                    
+                    // Optimization: Read 5x5 center sample
+                    const sampleSize = Math.min(size, 5);
+                    const offset = Math.floor((size - sampleSize)/2);
+                    
+                    const rx = Math.max(0, x + offset);
+                    const ry = Math.max(0, y + offset);
+                    const rw = Math.min(sampleSize, ctx.canvas.width - rx);
+                    const rh = Math.min(sampleSize, ctx.canvas.height - ry);
+                    
+                    if (rw <= 0 || rh <= 0) return;
+
+                    const data = ctx.getImageData(rx, ry, rw, rh);
+                    let r=0, g=0, b=0, count=0;
+                    for(let i=0; i<data.data.length; i+=4) {
+                        r += data.data[i];
+                        g += data.data[i+1];
+                        b += data.data[i+2];
+                        count++;
+                    }
+                    if (count > 0) {
+                        ctx.fillStyle = `rgb(${Math.round(r/count)},${Math.round(g/count)},${Math.round(b/count)})`;
+                        ctx.fillRect(x, y, size, size);
+                    }
+                } catch(e) {}
+            };
+
+            const confirmCrop = () => {
+                if (!cropRect || cropRect.w < 2 || cropRect.h < 2) return;
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                
+                try {
+                    const imageData = ctx.getImageData(cropRect.x, cropRect.y, cropRect.w, cropRect.h);
+                    canvas.width = cropRect.w;
+                    canvas.height = cropRect.h;
+                    ctx.putImageData(imageData, 0, 0);
+                    setCropRect(null);
+                    setMode('view');
+                    saveHistory();
+                    fitToScreen(cropRect.w, cropRect.h);
+                } catch (e) {
+                    console.error("Crop failed", e);
+                }
+            };
+
+            const handleSave = async () => {
+                canvasRef.current.toBlob(async (blob) => {
+                    const newUrl = URL.createObjectURL(blob);
+                    const updatedRec = {
+                        ...recording,
+                        blob: blob,
+                        url: newUrl,
+                        date: new Date().toLocaleDateString()
+                    };
+                    
+                    try {
+                        await dbHelper.update(updatedRec);
+                        onSave(updatedRec); // Pass back updated record
+                    } catch (e) {
+                        console.error("Save failed", e);
+                        alert("保存失败");
+                    }
+                }, 'image/png');
+            };
+            
+            const handleDownload = () => {
+                 canvasRef.current.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `screenshot-${Date.now()}.png`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }, 'image/png');
+            };
+
+            return (
+                <div className="h-[calc(100vh-6rem)] flex flex-col gap-4 animate-fade-in">
+                    {/* Header */}
+                     <div className="flex items-center justify-between bg-white px-6 py-3 rounded-xl border border-slate-200 shadow-sm shrink-0 dark:bg-slate-800 dark:border-slate-700">
+                        <div className="flex items-center gap-4">
+                            <Button variant="ghost" onClick={onBack} icon={ChevronLeft}>返回</Button>
+                            <div className="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
+                            <div className="flex flex-col">
+                                <h2 className="font-bold text-slate-800 dark:text-white">图片编辑器</h2>
+                                <span className="text-xs text-slate-500 font-mono dark:text-slate-400">{recording.slug}</span>
+                            </div>
+                        </div>
+                         <div className="flex gap-2 items-center">
+                            <HeaderControls theme={theme} toggleTheme={toggleTheme} />
+                            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2"></div>
+                            <Button onClick={handleDownload} variant="ghost" icon={Download}>下载</Button>
+                            <Button onClick={handleSave} variant="primary" icon={Save}>保存并关闭</Button>
+                         </div>
+                    </div>
+
+                    {/* Editor Area */}
+                    <div className="flex-grow flex gap-6 overflow-hidden">
+                        {/* Toolbar */}
+                        <div className="w-16 flex flex-col items-center gap-4 bg-white py-4 rounded-xl border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700 shrink-0 z-10">
+                             <Tooltip content="查看">
+                                 <button onClick={() => { setMode('view'); setCropRect(null); }} className={`p-3 rounded-xl transition-all ${mode === 'view' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
+                                    <Icon icon={Eye} />
+                                </button>
+                             </Tooltip>
+                             <Tooltip content="裁剪">
+                                <button onClick={() => { setMode('crop'); setCropRect(null); }} className={`p-3 rounded-xl transition-all ${mode === 'crop' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
+                                    <Icon icon={Crop} />
+                                </button>
+                             </Tooltip>
+                             <Tooltip content="打码">
+                                <button onClick={() => { setMode('mosaic'); setCropRect(null); }} className={`p-3 rounded-xl transition-all ${mode === 'mosaic' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
+                                    <Icon icon={Zap} />
+                                </button>
+                             </Tooltip>
+                            <div className="h-px w-8 bg-slate-200 dark:bg-slate-700 my-2"></div>
+                            <Tooltip content="撤销">
+                                <button onClick={undo} disabled={historyIndex <= 0} className="p-3 rounded-xl text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed dark:text-slate-400 dark:hover:bg-slate-700">
+                                    <Icon icon={Undo} />
+                                </button>
+                            </Tooltip>
+                        </div>
+
+                        {/* Canvas Stage */}
+                        <div className="flex-grow bg-slate-100 rounded-xl overflow-hidden relative flex items-center justify-center border border-slate-200 shadow-inner dark:bg-slate-950 dark:border-slate-800" ref={containerRef}>
+                            
+                            {/* Brush Settings */}
+                            {mode === 'mosaic' && (
+                                <div className="absolute top-4 left-4 z-20 bg-white/90 backdrop-blur p-3 rounded-lg shadow-lg border border-slate-200 flex flex-col gap-2 w-48 dark:bg-slate-800/90 dark:border-slate-700">
+                                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                                        <span>画笔大小</span>
+                                        <span>{brushSize}px</span>
+                                    </div>
+                                    <input 
+                                        type="range" 
+                                        min="10" 
+                                        max="100" 
+                                        value={brushSize} 
+                                        onChange={(e) => setBrushSize(Number(e.target.value))}
+                                        className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-600 accent-slate-900 dark:accent-white"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Crop Instructions */}
+                            {mode === 'crop' && !cropRect && (
+                                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-slate-900/80 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg pointer-events-none animate-fade-in">
+                                    拖动鼠标选择裁剪区域
+                                </div>
+                            )}
+
+                            <div className="relative shadow-2xl" style={{ transform: `scale(${scale})`, transformOrigin: 'center', transition: 'transform 0.1s', touchAction: 'none' }}>
+                                <canvas 
+                                    ref={canvasRef}
+                                    className={`bg-white cursor-${mode === 'view' ? 'default' : 'crosshair'}`}
+                                    style={{ touchAction: 'none' }}
+                                    onMouseDown={handleMouseDown}
+                                    onTouchStart={handleMouseDown}
+                                />
+                                {/* Crop Overlay & Mask */}
+                                {mode === 'crop' && (
+                                    <>
+                                        {!cropRect && <div className="absolute inset-0 bg-black/50 pointer-events-none" style={{ touchAction: 'none' }}></div>}
+                                        {cropRect && (
+                                            <div className="absolute bg-transparent shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]"
+                                                 style={{ 
+                                                     left: cropRect.x, 
+                                                     top: cropRect.y, 
+                                                     width: cropRect.w, 
+                                                     height: cropRect.h,
+                                                     pointerEvents: 'auto',
+                                                     touchAction: 'none'
+                                                 }}
+                                                 onMouseDown={(e) => startDrag(e, 'move')}
+                                                 onTouchStart={(e) => startDrag(e, 'move')}
+                                                 >
+                                                 {/* Border */}
+                                                 <div className="absolute inset-0 border-2 border-white pointer-events-none"></div>
+
+                                                 {/* Handles */}
+                                                 <div className="absolute top-0 left-0 w-4 h-4 bg-white border-2 border-indigo-600 rounded-full -translate-x-1/2 -translate-y-1/2 cursor-nw-resize z-20" onMouseDown={(e) => startDrag(e, 'nw')} onTouchStart={(e) => startDrag(e, 'nw')}></div>
+                                                 <div className="absolute top-0 right-0 w-4 h-4 bg-white border-2 border-indigo-600 rounded-full translate-x-1/2 -translate-y-1/2 cursor-ne-resize z-20" onMouseDown={(e) => startDrag(e, 'ne')} onTouchStart={(e) => startDrag(e, 'ne')}></div>
+                                                 <div className="absolute bottom-0 left-0 w-4 h-4 bg-white border-2 border-indigo-600 rounded-full -translate-x-1/2 translate-y-1/2 cursor-sw-resize z-20" onMouseDown={(e) => startDrag(e, 'sw')} onTouchStart={(e) => startDrag(e, 'sw')}></div>
+                                                 <div className="absolute bottom-0 right-0 w-4 h-4 bg-white border-2 border-indigo-600 rounded-full translate-x-1/2 translate-y-1/2 cursor-se-resize z-20" onMouseDown={(e) => startDrag(e, 'se')} onTouchStart={(e) => startDrag(e, 'se')}></div>
+                                                 
+                                                 <div className="absolute top-0 left-1/2 w-3 h-3 bg-white border border-indigo-600 rounded-full -translate-x-1/2 -translate-y-1/2 cursor-n-resize z-20" onMouseDown={(e) => startDrag(e, 'n')} onTouchStart={(e) => startDrag(e, 'n')}></div>
+                                                 <div className="absolute bottom-0 left-1/2 w-3 h-3 bg-white border border-indigo-600 rounded-full -translate-x-1/2 translate-y-1/2 cursor-s-resize z-20" onMouseDown={(e) => startDrag(e, 's')} onTouchStart={(e) => startDrag(e, 's')}></div>
+                                                 <div className="absolute left-0 top-1/2 w-3 h-3 bg-white border border-indigo-600 rounded-full -translate-x-1/2 -translate-y-1/2 cursor-w-resize z-20" onMouseDown={(e) => startDrag(e, 'w')} onTouchStart={(e) => startDrag(e, 'w')}></div>
+                                                 <div className="absolute right-0 top-1/2 w-3 h-3 bg-white border border-indigo-600 rounded-full translate-x-1/2 -translate-y-1/2 cursor-e-resize z-20" onMouseDown={(e) => startDrag(e, 'e')} onTouchStart={(e) => startDrag(e, 'e')}></div>
+
+                                                <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 flex gap-16 pointer-events-auto z-30">
+                                                    <button className="bg-red-500 text-white px-16 py-8 rounded-full text-4xl font-extrabold shadow-2xl hover:bg-red-600 transition-colors flex items-center gap-6" onClick={(e) => { e.stopPropagation(); setCropRect(null); }}>
+                                                        取消
+                                                    </button>
+                                                    <button className="bg-green-600 text-white px-16 py-8 rounded-full text-4xl font-extrabold shadow-2xl hover:bg-green-700 transition-colors flex items-center gap-6" onClick={(e) => { e.stopPropagation(); confirmCrop(); }}>
+                                                        <Icon icon={Check} size={48}/> 确认
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                            
+                            {/* Zoom Controls */}
+                            <div className="absolute bottom-6 right-6 flex items-center gap-2 bg-white/90 backdrop-blur p-2 rounded-lg shadow-lg border border-slate-200 dark:bg-slate-800/90 dark:border-slate-700 z-20">
+                                <button onClick={() => setScale(s => Math.max(0.1, s - 0.1))} className="p-1 hover:bg-slate-100 rounded dark:hover:bg-slate-700"><span className="text-lg font-bold text-slate-600 dark:text-slate-300">-</span></button>
+                                <span className="text-xs font-mono w-12 text-center text-slate-600 dark:text-slate-300">{Math.round(scale * 100)}%</span>
+                                <button onClick={() => setScale(s => Math.min(3, s + 0.1))} className="p-1 hover:bg-slate-100 rounded dark:hover:bg-slate-700"><span className="text-lg font-bold text-slate-600 dark:text-slate-300">+</span></button>
+                                <div className="w-px h-4 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                                <button onClick={() => {
+                                    if(canvasRef.current && containerRef.current) fitToScreen(canvasRef.current.width, canvasRef.current.height);
+                                }} className="text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">适应</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             );
         };
@@ -790,7 +1373,7 @@
 
                     const chunks = [];
                     recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-                    recorder.onstop = () => {
+                    recorder.onstop = async () => {
                         const blob = new Blob(chunks, { type: 'video/webm' });
                         const url = URL.createObjectURL(blob);
                         const newRec = {
@@ -800,10 +1383,14 @@
                             date: new Date().toLocaleDateString(),
                             duration: recordingDuration,
                             status: 'draft',
+                            type: 'video',
                             url: url,
                             blob: blob,
                             notes: ''
                         };
+                        
+                        await dbHelper.add(newRec); // Save to DB
+                        
                         setRecordings(prev => [newRec, ...prev]);
                         setActiveRecording(newRec);
                         setIsRecording(false);
@@ -838,6 +1425,100 @@
             const stopRecording = () => {
                 if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
                     mediaRecorderRef.current.stop();
+                }
+            };
+            
+            const handleSnapshot = async () => {
+                try {
+                    const stream = await navigator.mediaDevices.getDisplayMedia({
+                        video: { 
+                            width: { ideal: 3840 },
+                            height: { ideal: 2160 }, 
+                            frameRate: 30 
+                        },
+                        audio: false,
+                        preferCurrentTab: false
+                    });
+                    
+                    const track = stream.getVideoTracks()[0];
+                    
+                    const video = document.createElement('video');
+                    video.autoplay = true;
+                    video.muted = true;
+                    video.srcObject = stream;
+                    
+                    // Robust waiting mechanism
+                    await new Promise((resolve, reject) => {
+                        let timeout = setTimeout(() => reject(new Error("Video load timeout")), 5000);
+                        video.onloadedmetadata = () => {
+                            clearTimeout(timeout);
+                            video.play().then(resolve).catch(reject);
+                        };
+                        // In case metadata is already loaded
+                        if (video.readyState >= 1) {
+                            clearTimeout(timeout);
+                            video.play().then(resolve).catch(reject);
+                        }
+                    });
+
+                    // Wait for actual frame data (fix for black screen)
+                    await new Promise(resolve => {
+                        let attempts = 0;
+                        const check = () => {
+                            attempts++;
+                            // Check if video has dimensions and data (HAVE_CURRENT_DATA = 2)
+                            if (video.readyState >= 2 && video.videoWidth > 0) {
+                                // Extra buffer to ensure frame is rendered and not black
+                                setTimeout(resolve, 500); 
+                            } else if (attempts > 50) { // 5 seconds max
+                                console.warn("Timeout waiting for video data");
+                                resolve();
+                            } else {
+                                setTimeout(check, 100);
+                            }
+                        };
+                        check();
+                    });
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0);
+                    
+                    track.stop();
+                    video.srcObject = null;
+                    video.remove();
+                    
+                    canvas.toBlob(async (blob) => {
+                         if (!blob) {
+                             alert("截图生成失败");
+                             return;
+                         }
+                         const url = URL.createObjectURL(blob);
+                         const newRec = {
+                            id: Date.now(),
+                            title: `网页截图 ${recordings.length + 1}`,
+                            slug: `/snapshots/img-${Date.now().toString().slice(-4)}`,
+                            date: new Date().toLocaleDateString(),
+                            status: 'draft',
+                            type: 'image',
+                            url: url,
+                            blob: blob,
+                            notes: ''
+                        };
+                        
+                        await dbHelper.add(newRec);
+                        setRecordings(prev => [newRec, ...prev]);
+                        setActiveRecording(newRec);
+                        setView('image-editor');
+                    }, 'image/png');
+
+                } catch (err) {
+                    console.error("Snapshot failed", err);
+                    if (err.name !== 'NotAllowedError') {
+                        alert("截图失败: " + err.message);
+                    }
                 }
             };
 
@@ -1287,17 +1968,21 @@
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                             <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div>
-                                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">在线录屏工具</h1>
-                                    <p className="text-slate-500 mt-1 dark:text-slate-400">管理和编辑您的所有录屏文件</p>
+                                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">在线录屏工作室</h1>
+                                    <p className="text-slate-500 mt-1 dark:text-slate-400">一站式网页录屏、截图、编辑工具</p>
                                 </div>
                                 <HeaderControls theme={theme} toggleTheme={toggleTheme} />
                             </div>
                             <DashboardView 
                                 recordings={recordings} 
                                 onNewRecording={() => setIsSetupOpen(true)}
-                                onEdit={(rec) => { setActiveRecording(rec); setView('editor'); }}
-                                onDelete={(id) => setRecordings(prev => prev.filter(r => r.id !== id))}
-                                onPreview={(rec) => { setActiveRecording(rec); setView('editor'); }}
+                                onSnapshot={handleSnapshot}
+                                onEdit={(rec) => { setActiveRecording(rec); setView(rec.type === 'image' ? 'image-editor' : 'editor'); }}
+                                onDelete={async (id) => {
+                                    await dbHelper.delete(id);
+                                    setRecordings(prev => prev.filter(r => r.id !== id));
+                                }}
+                                onPreview={(rec) => { setActiveRecording(rec); setView(rec.type === 'image' ? 'image-editor' : 'editor'); }}
                                 isRecording={isRecording}
                             />
                         </div>
@@ -1310,6 +1995,21 @@
                                 onBack={() => { setView('dashboard'); setActiveRecording(null); }}
                                 onSave={() => { setView('dashboard'); }}
                                 onExport={handleExport}
+                                theme={theme}
+                                toggleTheme={toggleTheme}
+                            />
+                        </div>
+                    )}
+                    
+                    {view === 'image-editor' && activeRecording && (
+                         <div className="max-w-[1920px] mx-auto px-4 py-4 h-screen overflow-hidden">
+                            <ImageEditorView
+                                recording={activeRecording}
+                                onBack={() => { setView('dashboard'); setActiveRecording(null); }}
+                                onSave={(updated) => { 
+                                    setRecordings(prev => prev.map(r => r.id === updated.id ? updated : r));
+                                    setView('dashboard'); 
+                                }}
                                 theme={theme}
                                 toggleTheme={toggleTheme}
                             />
