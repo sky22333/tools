@@ -1367,7 +1367,7 @@
                         try { return JSON.parse(saved); } catch (e) { console.error("Config parse error", e); }
                     }
                 }
-                return { micEnabled: true, systemAudioEnabled: true, micVolume: 1.0, resolution: '1080p', frameRate: '30' };
+                return { micEnabled: true, systemAudioEnabled: true, micVolume: 1.0, resolution: '1080p', frameRate: '30', source: 'screen', facingMode: 'user' };
             });
 
             useEffect(() => {
@@ -1380,6 +1380,7 @@
             const streamRef = useRef(null);
             const timerRef = useRef(null);
             const [recordingDuration, setRecordingDuration] = useState('00:00');
+            const [previewStream, setPreviewStream] = useState(null);
 
             const startRecording = async () => {
                 if (isRecording || isStarting) return;
@@ -1388,40 +1389,80 @@
                     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                     audioContextRef.current = audioCtx;
                     
-                    const displayStream = await navigator.mediaDevices.getDisplayMedia({
-                        video: { frameRate: parseInt(config.frameRate) },
-                        audio: config.systemAudioEnabled
-                    });
+                    let mainStream;
                     
-                    displayStream.getVideoTracks()[0].onended = stopRecording;
-
+                    if (config.source === 'camera') {
+                        // Camera Recording
+                        const constraints = {
+                            video: { 
+                                facingMode: config.facingMode,
+                                width: config.resolution === '4k' ? 3840 : (config.resolution === '1080p' ? 1920 : 1280),
+                                height: config.resolution === '4k' ? 2160 : (config.resolution === '1080p' ? 1080 : 720),
+                                frameRate: parseInt(config.frameRate)
+                            },
+                            audio: config.micEnabled ? {
+                                echoCancellation: true,
+                                noiseSuppression: true
+                            } : false
+                        };
+                        mainStream = await navigator.mediaDevices.getUserMedia(constraints);
+                        setPreviewStream(mainStream);
+                    } else {
+                        // Screen Recording
+                        mainStream = await navigator.mediaDevices.getDisplayMedia({
+                            video: { frameRate: parseInt(config.frameRate) },
+                            audio: config.systemAudioEnabled
+                        });
+                        // Stop recording if user clicks "Stop Sharing" browser UI
+                        mainStream.getVideoTracks()[0].onended = stopRecording;
+                    }
+                    
                     const dest = audioCtx.createMediaStreamDestination();
                     const masterGain = audioCtx.createGain();
                     masterGain.connect(dest);
 
-                    if (config.systemAudioEnabled && displayStream.getAudioTracks().length > 0) {
-                        const sysSource = audioCtx.createMediaStreamSource(displayStream);
+                    // Mix Audio Sources
+                    if (config.source === 'screen' && config.systemAudioEnabled && mainStream.getAudioTracks().length > 0) {
+                        const sysSource = audioCtx.createMediaStreamSource(mainStream);
                         sysSource.connect(masterGain);
                     }
 
-                    if (config.micEnabled) {
+                    // For Screen Recording, Mic is separate stream. For Camera, audio is already in mainStream if requested.
+                    if (config.source === 'screen' && config.micEnabled) {
                         try {
-                            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                            const micStream = await navigator.mediaDevices.getUserMedia({ 
+                                audio: { echoCancellation: true, noiseSuppression: true } 
+                            });
                             const micSource = audioCtx.createMediaStreamSource(micStream);
                             const micGain = audioCtx.createGain();
                             micGain.gain.value = config.micVolume;
                             micSource.connect(micGain).connect(masterGain);
-                            streamRef.current = new MediaStream([...displayStream.getTracks(), ...micStream.getTracks()]);
+                            
+                            // Combine tracks for cleanup later
+                            streamRef.current = new MediaStream([...mainStream.getTracks(), ...micStream.getTracks()]);
                         } catch (e) {
                             console.warn("Mic error", e);
-                            streamRef.current = displayStream;
+                            streamRef.current = mainStream;
                         }
+                    } else if (config.source === 'camera' && config.micEnabled) {
+                        // For camera, if audio track exists, route it through gain node if we want volume control, 
+                        // but usually it's direct. To keep consistent architecture:
+                        if (mainStream.getAudioTracks().length > 0) {
+                            const micSource = audioCtx.createMediaStreamSource(mainStream);
+                             const micGain = audioCtx.createGain();
+                            micGain.gain.value = config.micVolume;
+                            micSource.connect(micGain).connect(masterGain);
+                        }
+                        streamRef.current = mainStream;
                     } else {
-                        streamRef.current = displayStream;
+                        streamRef.current = mainStream;
                     }
 
+                    // Final stream to record
+                    // For Camera: Use video from mainStream + mixed audio
+                    // For Screen: Use video from mainStream + mixed audio
                     const finalStream = new MediaStream([
-                        ...displayStream.getVideoTracks(),
+                        ...mainStream.getVideoTracks(),
                         ...dest.stream.getAudioTracks()
                     ]);
 
@@ -1436,8 +1477,8 @@
                         const url = URL.createObjectURL(blob);
                         const newRec = {
                             id: Date.now(),
-                            title: `我的录屏 ${recordings.length + 1}`,
-                            slug: `/recordings/untitled-${Date.now().toString().slice(-4)}`,
+                            title: `${config.source === 'camera' ? '摄像头录像' : '我的录屏'} ${recordings.length + 1}`,
+                            slug: `/recordings/${config.source === 'camera' ? 'camera' : 'screen'}-${Date.now().toString().slice(-4)}`,
                             date: new Date().toLocaleDateString(),
                             duration: recordingDuration,
                             status: 'draft',
@@ -1452,6 +1493,7 @@
                         setRecordings(prev => [newRec, ...prev]);
                         setActiveRecording(newRec);
                         setIsRecording(false);
+                        setPreviewStream(null);
                         setIsSetupOpen(false);
                         setView('editor');
                         if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
@@ -2080,14 +2122,61 @@
                     <Modal isOpen={isSetupOpen} onClose={() => setIsSetupOpen(false)} title="开始新的录制">
                         <div className="space-y-6">
                             <div className="space-y-4">
+                                {/* Source Selection */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400">录制来源</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button 
+                                            onClick={() => setConfig({...config, source: 'screen'})}
+                                            className={`flex items-center justify-center gap-2 p-3 rounded-xl border transition-all ${config.source === 'screen' ? 'bg-slate-900 text-white border-slate-900 dark:bg-blue-600 dark:border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'}`}
+                                        >
+                                            <Icon icon={Monitor} size={20} />
+                                            <span className="font-medium">屏幕录制</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => setConfig({...config, source: 'camera'})}
+                                            className={`flex items-center justify-center gap-2 p-3 rounded-xl border transition-all ${config.source === 'camera' ? 'bg-slate-900 text-white border-slate-900 dark:bg-blue-600 dark:border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'}`}
+                                        >
+                                            <Icon icon={Camera} size={20} />
+                                            <span className="font-medium">摄像头</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {config.source === 'camera' && (
+                                    <div className="space-y-1.5 animate-fade-in">
+                                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400">摄像头方向</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button 
+                                                onClick={() => setConfig({...config, facingMode: 'user'})}
+                                                className={`p-2 text-sm rounded-lg border transition-all ${config.facingMode === 'user' ? 'bg-slate-100 border-slate-300 text-slate-900 font-medium dark:bg-slate-700 dark:border-slate-500 dark:text-white' : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                                            >
+                                                前置 (User)
+                                            </button>
+                                            <button 
+                                                onClick={() => setConfig({...config, facingMode: 'environment'})}
+                                                className={`p-2 text-sm rounded-lg border transition-all ${config.facingMode === 'environment' ? 'bg-slate-100 border-slate-300 text-slate-900 font-medium dark:bg-slate-700 dark:border-slate-500 dark:text-white' : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                                            >
+                                                后置 (Env)
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="h-px bg-slate-100 dark:bg-slate-700 my-2"></div>
+
                                 <Toggle label="启用麦克风" checked={config.micEnabled} onChange={v => setConfig({...config, micEnabled: v})} />
                                 {config.micEnabled && (
-                                    <div>
+                                    <div className="animate-fade-in">
                                         <label className="text-xs font-semibold text-slate-500 uppercase mb-1 block">麦克风音量</label>
                                         <input type="range" min="0" max="2" step="0.1" value={config.micVolume} onChange={e => setConfig({...config, micVolume: parseFloat(e.target.value)})} className="w-full" />
                                     </div>
                                 )}
-                                <Toggle label="录制系统声音" checked={config.systemAudioEnabled} onChange={v => setConfig({...config, systemAudioEnabled: v})} />
+                                
+                                {config.source === 'screen' && (
+                                    <Toggle label="录制系统声音" checked={config.systemAudioEnabled} onChange={v => setConfig({...config, systemAudioEnabled: v})} />
+                                )}
+
                                 <Select label="分辨率" value={config.resolution} onChange={v => setConfig({...config, resolution: v})} options={[
                                     {value: '1080p', label: '1080p (FHD)'},
                                     {value: '720p', label: '720p (HD)'},
@@ -2110,16 +2199,31 @@
 
                     {/* Recording Overlay */}
                     {isRecording && (
-                         <div className="fixed bottom-8 right-8 bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-6 animate-slide-up z-50 border border-slate-700">
-                            <div className="flex items-center gap-3">
-                                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                                <span className="font-mono font-medium text-lg">{recordingDuration}</span>
+                        <>
+                             {/* Camera Preview */}
+                             {previewStream && config.source === 'camera' && (
+                                <div className="fixed inset-0 z-40 bg-black">
+                                    <video
+                                        ref={ref => { if (ref && previewStream) ref.srcObject = previewStream; }}
+                                        autoPlay
+                                        muted
+                                        playsInline
+                                        className={`w-full h-full object-cover ${config.facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
+                                    />
+                                </div>
+                             )}
+
+                             <div className="fixed bottom-8 right-8 bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-6 animate-slide-up z-50 border border-slate-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                                    <span className="font-mono font-medium text-lg">{recordingDuration}</span>
+                                </div>
+                                <div className="h-8 w-px bg-slate-700"></div>
+                                <button onClick={stopRecording} className="bg-white text-slate-900 px-4 py-2 rounded-lg font-bold hover:bg-slate-100 transition-colors shadow-lg">
+                                    停止录制
+                                </button>
                             </div>
-                            <div className="h-8 w-px bg-slate-700"></div>
-                            <button onClick={stopRecording} className="bg-white text-slate-900 px-4 py-2 rounded-lg font-bold hover:bg-slate-100 transition-colors shadow-lg">
-                                停止录制
-                            </button>
-                        </div>
+                        </>
                     )}
                 </div>
             );
