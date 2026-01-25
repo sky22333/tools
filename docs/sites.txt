@@ -1,4 +1,4 @@
-## 自制的一些工具
+## 我的自制工具
 网页在线录屏, ./recording
 安卓开发工具, ./android
 代码编辑器, ./code
@@ -11,11 +11,18 @@ Github加速, https://yishijie.gitlab.io/ziyuan/
 在线m3u8播放器, https://blog.52013120.xyz/zhibo
 VIP视频在线播放, https://blog.52013120.xyz/video
 
+## 影音娱乐
+FongMi版tvbox下载, https://github.com/FongMi/Release
+takagen99黑盒版tvbox下载, https://github.com/j4Uq/TVBoxOSC/releases
+
 ## 开发社区
 GitHub, https://github.com
+gitea, https://gitea.com
+gitgay, https://git.gay
+gitlab, https://gitlab.com
 Stack Overflow, https://stackoverflow.com
 MDN Web Docs, https://developer.mozilla.org
-全球技术问答社区, https://stackoverflow.com/
+全球技术问答社区, https://stackoverflow.com
 
 ## AI网页
 ChatGPT, https://chatgpt.com/
