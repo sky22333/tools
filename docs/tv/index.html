@@ -264,7 +264,6 @@
                     </div>
                 </div>
 
-                <!-- Parses Configuration -->
                 <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
                     <div class="flex flex-col space-y-1.5 p-6">
                         <div class="flex items-center justify-between gap-4">
@@ -300,6 +299,54 @@
                         
                         <button @click="addParse" class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 gap-2">
                             <i data-lucide="plus" class="w-4 h-4"></i> 新增解析
+                        </button>
+                    </div>
+                </div>
+
+                <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                    <div class="flex flex-col space-y-1.5 p-6">
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="min-w-0">
+                                <h3 class="text-2xl font-semibold leading-none tracking-tight">直播源 (Lives)</h3>
+                                <p class="text-sm text-muted-foreground mt-1">配置直播线路，支持 M3U/TXT 地址与 EPG。</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 pt-0 space-y-4">
+                        <transition-group name="fade" tag="div" class="space-y-4">
+                            <div v-for="(live, index) in config.lives" :key="index" class="group relative grid gap-4 rounded-md border p-4 hover:bg-accent/50 transition-colors">
+                                <div class="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                    <button @click="removeLive(index)" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:bg-destructive hover:text-destructive-foreground h-8 w-8">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                <div class="grid gap-2">
+                                    <label class="text-sm font-medium leading-none">线路名称</label>
+                                    <input v-model="live.name" type="text" placeholder="例如: 央卫直播" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                </div>
+                                <div class="grid gap-2">
+                                    <label class="text-sm font-medium leading-none">直播地址</label>
+                                    <input v-model="live.url" type="text" placeholder="例如: https://example.com/live.txt" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                </div>
+                                <div class="grid gap-2">
+                                    <label class="text-sm font-medium leading-none">直播类型</label>
+                                    <select v-model.number="live.type" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                        <option :value="0">0 - M3U</option>
+                                        <option :value="1">1 - TXT</option>
+                                    </select>
+                                </div>
+                                <div class="grid gap-2">
+                                    <label class="text-sm font-medium leading-none">EPG 地址</label>
+                                    <input v-model="live.epg" type="text" placeholder="例如: https://example.com/epg.xml" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                </div>
+                            </div>
+                        </transition-group>
+
+                        <div v-if="config.lives.length === 0" class="text-center py-8 text-muted-foreground border-2 border-dashed rounded-md">
+                            暂无直播源，请点击下方“新增线路”
+                        </div>
+                        <button @click="addLive" class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> 新增线路
                         </button>
                     </div>
                 </div>
@@ -404,6 +451,9 @@
                     ],
                     parses: [
                          { name: "聚合解析", type: 0, url: "https://example.com/?url=", ext: { flag: [...defaultFlags] } }
+                    ],
+                    lives: [
+                        { name: "示例直播", type: 0, url: "https://example.com/live.txt", epg: "" }
                     ]
                 });
 
@@ -418,13 +468,22 @@
                 const jsonError = ref(null);
 
                 // Helper: Process Config to ensure keys exist
+                const normalizeConfig = (cfg) => {
+                    const normalized = { ...cfg };
+                    normalized.sites = Array.isArray(normalized.sites) ? normalized.sites : [];
+                    normalized.parses = Array.isArray(normalized.parses) ? normalized.parses : [];
+                    normalized.lives = Array.isArray(normalized.lives) ? normalized.lives : [];
+                    return normalized;
+                };
+
                 const getProcessedConfig = (cfg) => {
-                    const processedSites = cfg.sites.map((site, idx) => ({
+                    const normalized = normalizeConfig(cfg);
+                    const processedSites = normalized.sites.map((site, idx) => ({
                         ...site,
                         key: site.key || `site_${idx}_${Date.now()}`
                     }));
                     return {
-                        ...cfg,
+                        ...normalized,
                         sites: processedSites
                     };
                 };
@@ -455,7 +514,7 @@
                         // Actually, since we update config, the watch(config) will trigger.
                         // But if isFocused is true, it won't overwrite internalJson. Perfect.
                         
-                        config.value = parsed;
+                        config.value = normalizeConfig(parsed);
                         jsonError.value = null;
                     } catch (e) {
                         jsonError.value = e.message;
@@ -538,6 +597,19 @@
                     config.value.parses.splice(index, 1);
                 };
 
+                const addLive = () => {
+                    config.value.lives.push({
+                        name: "",
+                        type: 0,
+                        url: "",
+                        epg: ""
+                    });
+                };
+
+                const removeLive = (index) => {
+                    config.value.lives.splice(index, 1);
+                };
+
                 const updateFlags = (index, value) => {
                     // Split by comma and trim
                     const flags = value.split(/,|，/).map(s => s.trim()).filter(s => s);
@@ -575,10 +647,12 @@
                             spider: "",
                             wallpaper: "https://api.kdcc.cn",
                             sites: [],
-                            parses: []
+                            parses: [],
+                            lives: []
                         };
                         addSite(); // Add one empty site
                         addParse(); // Add one default parse
+                        addLive();
                     }
                 };
                 
@@ -592,7 +666,7 @@
                 };
 
                 // Watchers for Lucide icons updates
-                watch(() => [config.value.sites.length, config.value.parses.length, showBase64Modal.value], () => {
+                watch(() => [config.value.sites.length, config.value.parses.length, config.value.lives.length, showBase64Modal.value], () => {
                     nextTick(() => {
                         lucide.createIcons();
                     });
@@ -618,6 +692,8 @@
                     removeSite,
                     addParse,
                     removeParse,
+                    addLive,
+                    removeLive,
                     updateFlags,
                     copyJson,
                     copyTextToClipboard,
