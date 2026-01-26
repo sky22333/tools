@@ -425,6 +425,9 @@
                             </button>
                         </div>
                     </div>
+                    <div class="rounded-md border border-input bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                        TVBox配置编码格式说明：8位随机字符 + ** + Base64
+                    </div>
                 </div>
              </div>
         </div>
@@ -527,12 +530,21 @@
                 // Computed Base64 Output
                 const base64Output = computed(() => {
                     try {
-                        // Use standard btoa with UTF-8 encoding fix
                         const str = jsonOutput.value;
-                        return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+                        const base64 = btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
                             function toSolidBytes(match, p1) {
                                 return String.fromCharCode('0x' + p1);
                         }));
+                        const digits = (() => {
+                            const length = 8;
+                            if (window.crypto && window.crypto.getRandomValues) {
+                                const random = new Uint32Array(length);
+                                window.crypto.getRandomValues(random);
+                                return Array.from(random, n => (n % 10).toString()).join("");
+                            }
+                            return Array.from({ length }, () => Math.floor(Math.random() * 10).toString()).join("");
+                        })();
+                        return `${digits}**${base64}`;
                     } catch (e) {
                         return "Error generating Base64";
                     }
