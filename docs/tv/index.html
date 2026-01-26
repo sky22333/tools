@@ -358,6 +358,45 @@
                 
                 <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
                     <div class="flex flex-col space-y-1.5 p-6">
+                        <h3 class="text-2xl font-semibold leading-none tracking-tight">接口解密导入</h3>
+                        <p class="text-sm text-muted-foreground">支持链接拉取或直接粘贴加密内容，自动解密并导入到配置。</p>
+                    </div>
+                    <div class="p-6 pt-0 space-y-4">
+                        <div class="grid gap-2">
+                            <label class="text-sm font-medium leading-none">接口地址</label>
+                            <input v-model="importUrl" type="text" placeholder="例如: https://example.com/tv/tvbox.txt" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                            <div class="flex gap-2">
+                                <button :disabled="importing" @click="importFromUrl" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4">
+                                    <i data-lucide="download" class="w-4 h-4 mr-2"></i> 拉取并解密
+                                </button>
+                                <button @click="importUrl=''; importError=null" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4">
+                                    清空
+                                </button>
+                            </div>
+                        </div>
+                        <div class="grid gap-2">
+                            <label class="text-sm font-medium leading-none">加密内容</label>
+                            <textarea v-model="importRaw" rows="3" placeholder="粘贴形如：8位随机字符**Base64 的内容" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"></textarea>
+                            <div class="flex gap-2">
+                                <button @click="importFromRaw" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4">
+                                    <i data-lucide="key" class="w-4 h-4 mr-2"></i> 粘贴解密并导入
+                                </button>
+                                <button @click="importRaw=''; importError=null" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4">
+                                    清空
+                                </button>
+                            </div>
+                        </div>
+                        <div v-if="importError" class="rounded-md border border-destructive bg-destructive/10 text-destructive-foreground px-3 py-2 text-xs">
+                            {{ importError }}
+                        </div>
+                        <div class="rounded-md border border-input bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                            内容格式：8位随机字符 + ** + Base64
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                    <div class="flex flex-col space-y-1.5 p-6">
                         <h3 class="text-2xl font-semibold leading-none tracking-tight">配置预览</h3>
                         <p class="text-sm text-muted-foreground">实时生成的 JSON 配置代码。</p>
                     </div>
@@ -579,6 +618,68 @@
                     });
                 };
 
+                const importUrl = ref("");
+                const importRaw = ref("");
+                const importing = ref(false);
+                const importError = ref(null);
+                const base64ToUtf8 = (base64) => {
+                    const bin = atob(base64.replace(/\s+/g, ""));
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    return new TextDecoder("utf-8").decode(bytes);
+                };
+                const extractPayload = (input) => {
+                    const s = input.trim();
+                    const m = s.match(/^([0-9A-Za-z]{8,})\*\*(.+)$/);
+                    if (!m) throw new Error("内容格式不符合“8位随机字符**Base64”");
+                    return m[2].trim();
+                };
+                const applyDecodedConfig = (obj) => {
+                    const normalized = normalizeConfig(obj);
+                    const finalConfig = getProcessedConfig(normalized);
+                    config.value = finalConfig;
+                    internalJson.value = JSON.stringify(finalConfig, null, 2);
+                    jsonError.value = null;
+                };
+                const importFromRaw = () => {
+                    try {
+                        importError.value = null;
+                        const payload = extractPayload(importRaw.value);
+                        const jsonStr = base64ToUtf8(payload);
+                        const obj = JSON.parse(jsonStr);
+                        applyDecodedConfig(obj);
+                        alert("已完成解密并导入配置");
+                    } catch (e) {
+                        importError.value = e.message || "解密失败";
+                    }
+                };
+                const importFromUrl = async () => {
+                    try {
+                        importError.value = null;
+                        importing.value = true;
+                        const controller = new AbortController();
+                        const timer = setTimeout(() => controller.abort(), 10000);
+                        const res = await fetch(importUrl.value, {
+                            method: "GET",
+                            cache: "no-store",
+                            headers: { "Accept": "text/plain,application/json" },
+                            signal: controller.signal
+                        });
+                        clearTimeout(timer);
+                        if (!res.ok) throw new Error(`网络错误：${res.status}`);
+                        const text = await res.text();
+                        const payload = extractPayload(text);
+                        const jsonStr = base64ToUtf8(payload);
+                        const obj = JSON.parse(jsonStr);
+                        applyDecodedConfig(obj);
+                        alert("已完成拉取、解密并导入配置");
+                    } catch (e) {
+                        importError.value = e.message || "拉取或解密失败";
+                    } finally {
+                        importing.value = false;
+                    }
+                };
+
                 // Methods
                 const addSite = () => {
                     config.value.sites.push({
@@ -700,6 +801,12 @@
                     copyText,
                     showBase64Modal,
                     isDark,
+                    importUrl,
+                    importRaw,
+                    importing,
+                    importError,
+                    importFromUrl,
+                    importFromRaw,
                     addSite,
                     removeSite,
                     addParse,
