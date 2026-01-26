@@ -553,5 +553,12 @@
       }
     }
   ],
-  "lives": []
+  "lives": [
+    {
+      "name": "jackTV",
+      "type": 0,
+      "url": "https://php.946985.filegear-sg.me/jackTV.m3u",
+      "epg": ""
+    }
+  ]
 }
