@@ -358,8 +358,8 @@
                 
                 <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
                     <div class="flex flex-col space-y-1.5 p-6">
-                        <h3 class="text-2xl font-semibold leading-none tracking-tight">接口解密导入</h3>
-                        <p class="text-sm text-muted-foreground">支持链接拉取或直接粘贴加密内容，自动解密并导入到配置。</p>
+                        <h3 class="text-2xl font-semibold leading-none tracking-tight">接口配置解析</h3>
+                        <p class="text-sm text-muted-foreground">支持链接拉取或直接粘贴加密内容，自动解析。</p>
                     </div>
                     <div class="p-6 pt-0 space-y-4">
                         <div class="grid gap-2">
@@ -367,7 +367,7 @@
                             <input v-model="importUrl" type="text" placeholder="例如: https://example.com/tv/tvbox.txt" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                             <div class="flex gap-2">
                                 <button :disabled="importing" @click="importFromUrl" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4">
-                                    <i data-lucide="download" class="w-4 h-4 mr-2"></i> 拉取并解密
+                                    <i data-lucide="download" class="w-4 h-4 mr-2"></i> 拉取并解析
                                 </button>
                                 <button @click="importUrl=''; importError=null" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4">
                                     清空
@@ -379,7 +379,7 @@
                             <textarea v-model="importRaw" rows="3" placeholder="粘贴形如：8位随机字符**Base64 的内容" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"></textarea>
                             <div class="flex gap-2">
                                 <button @click="importFromRaw" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4">
-                                    <i data-lucide="key" class="w-4 h-4 mr-2"></i> 粘贴解密并导入
+                                    <i data-lucide="key" class="w-4 h-4 mr-2"></i> 解析配置
                                 </button>
                                 <button @click="importRaw=''; importError=null" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4">
                                     清空
@@ -648,9 +648,9 @@
                         const jsonStr = base64ToUtf8(payload);
                         const obj = JSON.parse(jsonStr);
                         applyDecodedConfig(obj);
-                        alert("已完成解密并导入配置");
+                        alert("已完成解析并导入配置");
                     } catch (e) {
-                        importError.value = e.message || "解密失败";
+                        importError.value = e.message || "解析失败";
                     }
                 };
                 const importFromUrl = async () => {
@@ -672,9 +672,9 @@
                         const jsonStr = base64ToUtf8(payload);
                         const obj = JSON.parse(jsonStr);
                         applyDecodedConfig(obj);
-                        alert("已完成拉取、解密并导入配置");
+                        alert("已完成拉取、解析并导入配置");
                     } catch (e) {
-                        importError.value = e.message || "拉取或解密失败";
+                        importError.value = e.message || "拉取或解析失败";
                     } finally {
                         importing.value = false;
                     }
