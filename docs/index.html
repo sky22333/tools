@@ -103,6 +103,10 @@
             html, body {
                 overflow-x: hidden;
             }
+            .cv-auto {
+                content-visibility: auto;
+                contain-intrinsic-size: 600px;
+            }
         }
         
         /* Custom Scrollbar for Menu */
@@ -313,6 +317,19 @@
             fetchSites();
         });
 
+        const failedDomains = new Set();
+        const faviconObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const img = entry.target;
+                const src = img.dataset.src;
+                if (src && !img.src) {
+                    img.src = src;
+                }
+                faviconObserver.unobserve(img);
+            });
+        }, { root: null, rootMargin: '200px', threshold: 0 });
+
         async function fetchSites() {
             try {
                 const response = await fetch('sites.txt');
@@ -413,6 +430,7 @@
                 img.src = generateAvatar(name);
                 img.classList.remove('h-5', 'w-5', 'object-contain');
                 img.classList.add('h-full', 'w-full', 'object-cover');
+                if (domain) failedDomains.add(domain);
             }
         }
 
@@ -443,7 +461,7 @@
                 if (!category.sites || category.sites.length === 0) return;
 
                 const categorySection = document.createElement('section');
-                categorySection.className = 'w-full scroll-mt-24';
+                categorySection.className = 'w-full scroll-mt-24 cv-auto';
                 
                 const sectionId = `cat-${index}`;
                 categorySection.id = sectionId;
@@ -476,6 +494,10 @@
             
             lucide.createIcons();
             renderFloatingMenu(activeCategories);
+            
+            Array.from(grid.querySelectorAll('img.lazy-favicon')).forEach(img => {
+                faviconObserver.observe(img);
+            });
         }
 
         function createCard(site) {
@@ -492,17 +514,21 @@
                 } catch (e) {
                     displayUrl = site.url;
                 }
-                const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(site.url)}&sz=64`;
-                
-                iconHtml = `
-                    <img src="${faviconUrl}" 
-                         data-domain="${displayUrl}" 
+                if (failedDomains.has(displayUrl)) {
+                    const avatarUrlFailed = generateAvatar(site.name);
+                    iconHtml = `<img src="${avatarUrlFailed}" alt="${site.name}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">`;
+                } else {
+                    const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(site.url)}&sz=64`;
+                    iconHtml = `
+                        <img 
+                          data-src="${faviconUrl}"
+                          data-domain="${displayUrl}" 
                           data-name="${site.name}"
                           alt="${site.name}" 
-                          loading="lazy" 
-                          class="h-5 w-5 object-contain transition-transform duration-500 group-hover:scale-110" 
+                          class="lazy-favicon h-5 w-5 object-contain transition-transform duration-500 group-hover:scale-110" 
                           onerror="handleFaviconError(this)">
-                 `;
+                     `;
+                }
              } else {
                  displayUrl = site.url;
                  iconHtml = `<img src="${avatarUrl}" alt="${site.name}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">`;
@@ -553,7 +579,7 @@
             });
             
             renderSites(filteredSites);
-        }, 500));
+        }, 300));
 
         // Floating Menu Logic
         const fabContainer = document.getElementById('fabContainer');
