@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Insights - 历史 Issue & PR 查看器</title>
+    
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: [
+                            '-apple-system', 
+                            'BlinkMacSystemFont', 
+                            'Segoe UI', 
+                            'Roboto', 
+                            'Helvetica Neue', 
+                            'Arial', 
+                            'Noto Sans', 
+                            'sans-serif', 
+                            'Apple Color Emoji', 
+                            'Segoe UI Emoji', 
+                            'Segoe UI Symbol', 
+                            'Noto Color Emoji'
+                        ] 
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.5s ease-out forwards',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { 
+                            '0%': { transform: 'translateY(20px)', opacity: '0' }, 
+                            '100%': { transform: 'translateY(0)', opacity: '1' } 
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 渲染优化 */
+        .content-visibility-auto {
+            content-visibility: auto;
+            contain-intrinsic-size: 0 500px; /* 预估高度 */
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-900 font-sans">
+
+    <!-- Background -->
+    <div class="fixed inset-0 -z-10 h-full w-full bg-white bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:6rem_4rem]">
+        <div class="absolute bottom-0 left-0 right-0 top-0 bg-[radial-gradient(circle_800px_at_100%_200px,#d5c5ff,transparent)] opacity-40"></div>
+    </div>
+
+    <main class="max-w-5xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center mb-12 animate-slide-up">
+            <div class="inline-flex items-center justify-center p-2 bg-blue-50 rounded-full mb-4 ring-1 ring-blue-100 shadow-sm">
+                <i data-lucide="github" class="w-5 h-5 text-blue-600 mr-2"></i>
+                <span class="text-sm font-semibold text-blue-700 tracking-wide uppercase">GitHub Data Explorer</span>
+            </div>
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-4 leading-tight">
+                历史 Issue & PR 洞察
+            </h1>
+            <p class="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                一站式检索指定用户的开源贡献记录，支持多仓库聚合展示与状态智能筛选，助您快速回顾开发历程。
+            </p>
+        </div>
+
+        <!-- Controls -->
+        <div class="glass-panel rounded-2xl shadow-xl shadow-slate-200/50 p-6 sm:p-8 mb-8 animate-slide-up" style="animation-delay: 0.1s;">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                <!-- Username -->
+                <div class="md:col-span-5">
+                    <label for="username" class="block text-sm font-semibold text-slate-700 mb-2">GitHub 用户名</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i data-lucide="user" class="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+                        </div>
+                        <input type="text" id="username" 
+                            class="block w-full pl-10 pr-3 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-slate-700 placeholder:text-slate-400 shadow-sm"
+                            placeholder="例如: octocat">
+                    </div>
+                </div>
+                
+                <!-- Token -->
+                <div class="md:col-span-5">
+                    <label for="token" class="block text-sm font-semibold text-slate-700 mb-2">
+                        API Token <span class="text-slate-400 font-normal ml-1 text-xs bg-slate-100 px-1.5 py-0.5 rounded">(可选)</span>
+                    </label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i data-lucide="key" class="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+                        </div>
+                        <input type="password" id="token" 
+                            class="block w-full pl-10 pr-3 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-slate-700 placeholder:text-slate-400 shadow-sm"
+                            placeholder="ghp_...">
+                    </div>
+                </div>
+
+                <!-- Button -->
+                <div class="md:col-span-2">
+                    <button id="fetchBtn" class="w-full flex items-center justify-center py-3 px-4 bg-slate-900 hover:bg-blue-600 text-white font-medium rounded-xl shadow-lg shadow-slate-900/20 hover:shadow-blue-600/30 hover:-translate-y-0.5 transition-all duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 active:scale-95">
+                        <span class="btn-text">开始检索</span>
+                        <i data-lucide="arrow-right" class="ml-2 w-4 h-4 btn-icon"></i>
+                        <div class="btn-spinner hidden animate-spin ml-2">
+                            <i data-lucide="loader-2" class="w-4 h-4"></i>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div id="statusSection" class="hidden mb-8 animate-fade-in"></div>
+
+        <!-- Data -->
+        <div id="dataContainer" class="space-y-6 pb-12"></div>
+        
+        <!-- Sentinel -->
+        <div id="sentinel" class="h-10 flex items-center justify-center opacity-0 transition-opacity duration-300">
+             <i data-lucide="loader" class="w-6 h-6 animate-spin text-slate-400"></i>
+        </div>
+    </main>
+
+    <script>
+        // Init
+        lucide.createIcons();
+
+        const fetchBtn = document.getElementById('fetchBtn');
+        const usernameInput = document.getElementById('username');
+        const tokenInput = document.getElementById('token');
+        const statusSection = document.getElementById('statusSection');
+        const dataContainer = document.getElementById('dataContainer');
+        const sentinel = document.getElementById('sentinel');
+        
+        const btnText = fetchBtn.querySelector('.btn-text');
+        const btnIcon = fetchBtn.querySelector('.btn-icon');
+        const btnSpinner = fetchBtn.querySelector('.btn-spinner');
+
+        // State
+        let renderedCount = 0;
+        let groupedRepos = []; 
+        let observer;
+
+        // UI Helpers
+
+        function setLoading(isLoading) {
+            fetchBtn.disabled = isLoading;
+            if (isLoading) {
+                btnText.textContent = '检索中...';
+                btnIcon.classList.add('hidden');
+                btnSpinner.classList.remove('hidden');
+                fetchBtn.classList.add('opacity-80', 'cursor-not-allowed');
+            } else {
+                btnText.textContent = '开始检索';
+                btnIcon.classList.remove('hidden');
+                btnSpinner.classList.add('hidden');
+                fetchBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+            }
+        }
+
+        function showStatus(type, message) {
+            statusSection.classList.remove('hidden');
+            let content = '';
+            let colorClass = '';
+            
+            if (type === 'error') {
+                colorClass = 'bg-red-50 text-red-700 border-red-100';
+                content = `<i data-lucide="alert-circle" class="w-5 h-5 mr-2"></i>`;
+            } else if (type === 'success') {
+                colorClass = 'bg-green-50 text-green-700 border-green-100';
+                content = `<i data-lucide="check-circle-2" class="w-5 h-5 mr-2"></i>`;
+            } else {
+                colorClass = 'bg-blue-50 text-blue-700 border-blue-100';
+                content = `<i data-lucide="loader" class="w-5 h-5 mr-2 animate-spin"></i>`;
+            }
+
+            statusSection.innerHTML = `
+                <div class="inline-flex items-center px-4 py-2 rounded-lg border shadow-sm ${colorClass}">
+                    ${content}
+                    <span class="font-medium">${message}</span>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function getStatusBadgeClass(state, isMerged, isPr) {
+            if (isPr && isMerged) return 'bg-purple-100 text-purple-700 border-purple-200';
+            if (state === 'closed') return 'bg-red-100 text-red-700 border-red-200';
+            return 'bg-green-100 text-green-700 border-green-200';
+        }
+
+        function getStatusIcon(state, isMerged, isPr) {
+            if (isPr) {
+                if (isMerged) return 'git-merge';
+                if (state === 'closed') return 'git-pull-request-closed';
+                return 'git-pull-request';
+            }
+            if (state === 'closed') return 'check-circle-2';
+            return 'circle-dot';
+        }
+
+        // Fetch
+
+        async function fetchGitHubData(username, token, type='all') {
+            let items = [];
+            let page = 1;
+            const perPage = 100;
+            const maxPages = 10; 
+
+            while (page <= maxPages) {
+                const url = `https://api.github.com/search/issues?q=author:${username}+type:${type}&sort=created&order=asc&page=${page}&per_page=${perPage}`;
+                try {
+                    const resp = await fetch(url, token ? { headers: { Authorization: `token ${token}` } } : {});
+                    const data = await resp.json();
+
+                    if (resp.status !== 200) throw new Error(data.message || 'API 请求失败');
+
+                    if (!data.items || data.items.length === 0) break;
+                    items.push(...data.items);
+                    if (data.items.length < perPage) break;
+                    page++;
+                } catch (err) {
+                    console.error(err);
+                    throw err;
+                }
+            }
+            return items;
+        }
+
+        // Rendering
+
+        function createRepoCard(repoName, repoItems) {
+            const card = document.createElement('div');
+            // 渲染优化
+            card.className = 'bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden card-hover content-visibility-auto mb-6';
+            
+            const header = document.createElement('div');
+            // 移动端适配
+            header.className = 'bg-slate-50/50 px-4 sm:px-6 py-4 border-b border-slate-100 flex items-start justify-between gap-3';
+            header.innerHTML = `
+                <div class="flex items-start gap-2 min-w-0">
+                    <i data-lucide="folder-git" class="w-5 h-5 text-slate-500 flex-shrink-0 mt-1"></i>
+                    <h3 class="font-semibold text-slate-800 text-lg break-words leading-tight">仓库：${repoName}</h3>
+                </div>
+                <span class="flex-shrink-0 px-2.5 py-0.5 rounded-full bg-slate-200/60 text-slate-600 text-xs font-medium whitespace-nowrap mt-0.5">
+                    ${repoItems.length} 条记录
+                </span>
+            `;
+
+            const list = document.createElement('div');
+            list.className = 'divide-y divide-slate-100';
+
+            repoItems.forEach(item => {
+                const isPr = !!item.pull_request;
+                const isMerged = !!item.merged_at; 
+                const stateClass = getStatusBadgeClass(item.state, isMerged, isPr);
+                const iconName = getStatusIcon(item.state, isMerged, isPr);
+                const dateStr = new Date(item.created_at).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+                const itemEl = document.createElement('a');
+                itemEl.href = item.html_url;
+                itemEl.target = '_blank';
+                itemEl.className = 'block px-6 py-4 hover:bg-slate-50 transition-colors group flex items-start gap-4';
+                
+                itemEl.innerHTML = `
+                    <div class="mt-1 flex-shrink-0">
+                        <i data-lucide="${iconName}" class="w-5 h-5 ${item.state === 'open' ? 'text-green-600' : (isMerged ? 'text-purple-600' : 'text-red-500')}"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">
+                            ${item.title}
+                        </p>
+                        <div class="mt-1 flex items-center gap-3 text-xs text-slate-500">
+                            <span>#${item.number}</span>
+                            <span>${dateStr}</span>
+                            <span class="px-1.5 py-0.5 rounded border ${stateClass} text-xs font-medium uppercase tracking-wide">
+                                ${item.state}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-200">
+                        <i data-lucide="external-link" class="w-4 h-4 text-slate-400"></i>
+                    </div>
+                `;
+                list.appendChild(itemEl);
+            });
+
+            card.appendChild(header);
+            card.appendChild(list);
+            return card;
+        }
+
+        // 数据分组
+
+        function processData(items) {
+            const repoMap = {};
+            items.forEach(it => {
+                const repoName = it.repository_url.split('/').slice(-2).join('/');
+                if (!repoMap[repoName]) repoMap[repoName] = [];
+                repoMap[repoName].push(it);
+            });
+            // 排序
+            return Object.entries(repoMap)
+                .map(([name, items]) => ({ name, items }))
+                .sort((a, b) => {
+                    const latestA = new Date(Math.max(...a.items.map(i => new Date(i.created_at))));
+                    const latestB = new Date(Math.max(...b.items.map(i => new Date(i.created_at))));
+                    return latestB - latestA;
+                });
+        }
+
+        function renderNextRepoBatch() {
+            const fragment = document.createDocumentFragment();
+            const end = Math.min(renderedCount + 5, groupedRepos.length); 
+            
+            if (renderedCount >= groupedRepos.length) {
+                sentinel.classList.add('hidden');
+                sentinel.style.opacity = '0';
+                return;
+            }
+
+            sentinel.style.opacity = '1';
+
+            for (let i = renderedCount; i < end; i++) {
+                const repo = groupedRepos[i];
+                repo.items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                const card = createRepoCard(repo.name, repo.items);
+                card.classList.add('animate-slide-up');
+                card.style.animationDelay = `${(i - renderedCount) * 0.1}s`; 
+                fragment.appendChild(card);
+            }
+
+            dataContainer.appendChild(fragment);
+            lucide.createIcons(); 
+            renderedCount = end;
+
+            if (renderedCount >= groupedRepos.length) {
+                sentinel.classList.add('hidden');
+            }
+        }
+
+        // Observer
+        observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && groupedRepos.length > 0) {
+                renderNextRepoBatch();
+            }
+        }, { rootMargin: '200px' }); // 预加载
+
+        observer.observe(sentinel);
+
+        // Events
+
+        [usernameInput, tokenInput].forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') fetchBtn.click();
+            });
+        });
+
+        fetchBtn.addEventListener('click', async () => {
+            const username = usernameInput.value.trim();
+            const token = tokenInput.value.trim();
+            
+            if (!username) {
+                showStatus('error', '请输入 GitHub 用户名');
+                return;
+            }
+
+            setLoading(true);
+            dataContainer.innerHTML = '';
+            groupedRepos = [];
+            renderedCount = 0;
+            sentinel.classList.remove('hidden');
+            showStatus('loading', '正在从 GitHub 获取数据，请稍候...');
+
+            try {
+                const [issues, prs] = await Promise.all([
+                    fetchGitHubData(username, token, 'issue'),
+                    fetchGitHubData(username, token, 'pr')
+                ]);
+
+                const allItemsRaw = [...issues, ...prs];
+
+                if (allItemsRaw.length === 0) {
+                    showStatus('error', '未找到相关记录');
+                    sentinel.classList.add('hidden');
+                } else {
+                    showStatus('success', `成功获取 ${allItemsRaw.length} 条记录`);
+                    
+                    // 数据处理
+                    groupedRepos = processData(allItemsRaw);
+                    
+                    // 初始渲染
+                    renderNextRepoBatch();
+                }
+            } catch (error) {
+                showStatus('error', `请求出错: ${error.message}`);
+                sentinel.classList.add('hidden');
+            } finally {
+                setLoading(false);
+            }
+        });
+    </script>
+</body>
+</html>
