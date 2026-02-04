@@ -313,12 +313,13 @@
         const emptyState = document.getElementById('emptyState');
         let allSites = [];
 
-        document.addEventListener('DOMContentLoaded', () => {
+        let faviconBase = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
+            faviconBase = await detectFaviconBase();
             fetchSites();
         });
-
-        const failedDomains = new Set();
         const faviconObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (!entry.isIntersecting) return;
@@ -413,25 +414,56 @@
         }
 
         function handleFaviconError(img) {
-            const domain = img.dataset.domain;
             const name = img.dataset.name;
-            const retryCount = parseInt(img.dataset.retry || '0');
-            
-            // Fallback chain: Google -> DuckDuckGo -> Unavatar -> Local SVG
-            const fallbacks = [
-                `https://icons.duckduckgo.com/ip3/${domain}.ico`,
-                `https://unavatar.io/${domain}`
+            img.removeAttribute('onerror');
+            img.src = generateAvatar(name);
+            img.classList.remove('h-5', 'w-5', 'object-contain');
+            img.classList.add('h-full', 'w-full', 'object-cover');
+        }
+
+        function probeUrl(url, timeout = 2000) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const timer = setTimeout(() => {
+                    img.src = '';
+                    reject(new Error('timeout'));
+                }, timeout);
+                img.onload = () => {
+                    clearTimeout(timer);
+                    resolve(true);
+                };
+                img.onerror = () => {
+                    clearTimeout(timer);
+                    reject(new Error('error'));
+                };
+                img.src = url;
+            });
+        }
+
+        async function detectFaviconBase() {
+            const candidates = [
+                {
+                    probe: 'https://www.google.com/favicon.ico',
+                    builder: (domain) => `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`
+                },
+                {
+                    probe: 'https://icons.duckduckgo.com/favicon.ico',
+                    builder: (domain) => `https://icons.duckduckgo.com/ip3/${domain}.ico`
+                },
+                {
+                    probe: 'https://unavatar.io/favicon.ico',
+                    builder: (domain) => `https://unavatar.io/${domain}`
+                }
             ];
 
-            if (retryCount < fallbacks.length) {
-                img.src = fallbacks[retryCount];
-                img.dataset.retry = retryCount + 1;
-            } else {
-                img.removeAttribute('onerror');
-                img.src = generateAvatar(name);
-                img.classList.remove('h-5', 'w-5', 'object-contain');
-                img.classList.add('h-full', 'w-full', 'object-cover');
-                if (domain) failedDomains.add(domain);
+            const probes = candidates.map((candidate) => {
+                return probeUrl(candidate.probe).then(() => candidate.builder);
+            });
+
+            try {
+                return await Promise.race(probes);
+            } catch (error) {
+                return null;
             }
         }
 
@@ -509,26 +541,24 @@
              
              const avatarUrl = generateAvatar(site.name);
              
-             if (isExternal) {
+            if (isExternal) {
                  try {
                     displayUrl = new URL(site.url).hostname;
                 } catch (e) {
                     displayUrl = site.url;
                 }
-                if (failedDomains.has(displayUrl)) {
-                    const avatarUrlFailed = generateAvatar(site.name);
-                    iconHtml = `<img src="${avatarUrlFailed}" alt="${site.name}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">`;
-                } else {
-                    const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(site.url)}&sz=64`;
+                if (faviconBase) {
+                    const faviconUrl = faviconBase(displayUrl);
                     iconHtml = `
                         <img 
                           data-src="${faviconUrl}"
-                          data-domain="${displayUrl}" 
                           data-name="${site.name}"
                           alt="${site.name}" 
                           class="lazy-favicon h-5 w-5 object-contain transition-transform duration-500 group-hover:scale-110" 
                           onerror="handleFaviconError(this)">
                      `;
+                } else {
+                    iconHtml = `<img src="${avatarUrl}" alt="${site.name}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">`;
                 }
              } else {
                  displayUrl = site.url;
