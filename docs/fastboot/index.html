@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Fastboot 工具箱</title>
+<style>
+:root{
+  --primary:#2563eb;--primary-dark:#1d4ed8;--primary-light:#eff6ff;
+  --success:#16a34a;--success-light:#f0fdf4;
+  --danger:#dc2626;--danger-light:#fef2f2;
+  --warn:#d97706;--warn-light:#fffbeb;
+  --bg:#f8fafc;--surface:#ffffff;--surface2:#f1f5f9;
+  --border:#e2e8f0;--border2:#cbd5e1;
+  --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+  --radius:12px;--radius-sm:8px;--radius-xs:6px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:0 4px 16px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.06);
+  --font:'Inter',system-ui,-apple-system,sans-serif;
+  --sidebar:260px;--header:56px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+.app{display:grid;grid-template-columns:var(--sidebar) 1fr;grid-template-rows:var(--header) 1fr;height:100vh;overflow:hidden}
+.header{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow);z-index:50}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:transform .22s ease}
+.main{overflow:auto;padding:24px;display:flex;flex-direction:column;gap:16px}
+.logo{font-weight:800;font-size:1rem;color:var(--primary);display:flex;align-items:center;gap:8px}
+.logo svg{width:20px;height:20px}
+.header-status{margin-left:auto;display:flex;align-items:center;gap:10px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:.8rem;font-weight:600}
+.badge-dot{width:7px;height:7px;border-radius:50%}
+.badge-idle{background:var(--surface2);color:var(--text2)}.badge-idle .badge-dot{background:var(--text3)}
+.badge-ok{background:var(--success-light);color:var(--success)}.badge-ok .badge-dot{background:var(--success)}
+.badge-err{background:var(--danger-light);color:var(--danger)}.badge-err .badge-dot{background:var(--danger)}
+.sidebar-section{padding:16px 12px 8px;font-size:.7rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em}
+.nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border:none;background:transparent;color:var(--text2);font-size:.875rem;font-weight:500;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s;text-align:left;margin:1px 0}
+.nav-btn svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.nav-btn:hover{background:var(--surface2);color:var(--text)}
+.nav-btn.active{background:var(--primary-light);color:var(--primary);font-weight:600}
+.nav-btn.active svg{opacity:1}
+.sidebar-footer{margin-top:auto;padding:12px;border-top:1px solid var(--border)}
+.device-card{background:var(--surface2);border-radius:var(--radius-sm);padding:12px;font-size:.8rem;margin-bottom:10px}
+.device-name{font-weight:700;color:var(--text);margin-bottom:2px;font-size:.85rem}
+.device-sub{color:var(--text3);font-size:.75rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.card-title{font-weight:700;font-size:.95rem;margin-bottom:4px}
+.card-sub{font-size:.8rem;color:var(--text2);margin-bottom:16px}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:var(--radius-sm);border:none;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn svg{width:15px;height:15px;flex-shrink:0}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}.btn-ghost:hover{background:var(--surface2);color:var(--text)}
+.btn-danger{background:var(--danger-light);color:var(--danger);border:1px solid #fecaca}.btn-danger:hover{background:#fee2e2}
+.btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+.btn-icon{padding:7px;border-radius:var(--radius-xs)}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.form-label{font-size:.8rem;font-weight:600;color:var(--text)}
+.input{width:100%;padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.875rem;outline:none;transition:border .15s}
+.input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+select.input{cursor:pointer}
+.dropzone{border:2px dashed var(--border2);border-radius:var(--radius);padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2)}
+.dropzone:hover,.dropzone.drag{border-color:var(--primary);background:var(--primary-light)}
+.dropzone svg{width:32px;height:32px;color:var(--text3);margin-bottom:8px}
+.dropzone p{font-size:.85rem;color:var(--text2);margin-bottom:4px}
+.dropzone span{font-size:.75rem;color:var(--text3)}
+.dropzone input{display:none}
+.queue-wrap{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.queue-item{display:grid;grid-template-columns:1fr 130px auto auto auto;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border)}
+.queue-item.flashing{border-color:var(--primary);background:var(--primary-light)}
+.queue-item.done{border-color:#86efac;background:var(--success-light)}
+.queue-item.failed{border-color:#fca5a5;background:var(--danger-light)}
+.q-name{font-size:.83rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.q-size{font-size:.72rem;color:var(--text3)}
+.progress-wrap{margin-top:12px}
+.progress-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--text2);margin-bottom:6px}
+.progress-bar{height:8px;background:var(--surface2);border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),#60a5fa);border-radius:999px;transition:width .3s ease;width:0%}
+.progress-fill.success{background:linear-gradient(90deg,var(--success),#4ade80)}
+.log-area{overflow:auto;background:#0f172a;color:#e2e8f0;border-radius:var(--radius-sm);padding:12px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:.75rem;line-height:1.6;border:1px solid var(--border)}
+.log-ok{color:#4ade80}.log-err{color:#f87171}.log-warn{color:#fbbf24}.log-info{color:#93c5fd}
+.cmd-row{display:flex;gap:8px;margin-top:8px}
+.cmd-row .input{flex:1}
+.adv-hist-item{background:var(--surface2);border-radius:var(--radius-xs);padding:6px 10px;font-size:.78rem;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);margin-bottom:4px}
+.adv-hist-item:hover{border-color:var(--primary);color:var(--primary)}
+.toast-wrap{position:fixed;top:16px;right:16px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:var(--radius-sm);box-shadow:var(--shadow-md);font-size:.84rem;font-weight:500;pointer-events:auto;animation:toast-in .22s ease;max-width:320px}
+@keyframes toast-in{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
+.toast-ok{background:var(--success-light);color:var(--success);border:1px solid #86efac}
+.toast-err{background:var(--danger-light);color:var(--danger);border:1px solid #fca5a5}
+.toast-info{background:var(--primary-light);color:var(--primary);border:1px solid #93c5fd}
+.panel{display:none}.panel.active{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.flex1{flex:1}
+.vid-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.chip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.empty-state{text-align:center;padding:32px 20px;color:var(--text3)}
+.empty-state svg{width:36px;height:36px;margin-bottom:10px;opacity:.4}
+@media(max-width:768px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:fixed;top:var(--header);left:0;bottom:0;width:var(--sidebar);z-index:80;transform:translateX(-100%)}
+  .sidebar.open{transform:none;box-shadow:var(--shadow-md)}
+  .overlay{display:none;position:fixed;inset:0;top:var(--header);background:rgba(0,0,0,.4);z-index:70}
+  .overlay.show{display:block}
+  .main{padding:14px;gap:12px}
+  .menu-btn{display:flex}
+  .queue-item{grid-template-columns:1fr auto auto auto;grid-template-rows:auto auto}
+  .q-part-cell{grid-column:1/-1}
+  .card{padding:14px}
+  .cmd-row{flex-direction:column}
+  .header-status .badge{display:none}
+}
+@media(min-width:769px){.menu-btn{display:none}}
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay"></div>
+<div class="toast-wrap" id="toast-wrap"></div>
+<div class="app">
+  <header class="header">
+    <button class="btn btn-ghost btn-icon menu-btn" id="menu-btn" aria-label="菜单">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      Fastboot 工具箱
+    </div>
+    <div class="header-status">
+      <div id="conn-badge" class="badge badge-idle"><div class="badge-dot"></div><span id="conn-text">未连接</span></div>
+      <button id="connect-btn" class="btn btn-primary btn-sm">连接设备</button>
+    </div>
+  </header>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">导航</div>
+    <div style="padding:0 8px">
+      <button class="nav-btn active" data-panel="queue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        刷写队列
+      </button>
+      <button class="nav-btn" data-panel="single">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        单文件刷写
+      </button>
+      <button class="nav-btn" data-panel="adv">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        高级命令
+      </button>
+      <button class="nav-btn" data-panel="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        设置
+      </button>
+      <button class="nav-btn" data-panel="logs">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        日志
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-section" style="padding:0 0 8px">设备操作</div>
+      <div class="device-card">
+        <div class="device-name" id="device-name">未连接</div>
+        <div class="device-sub" id="device-sub">请先连接设备</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button id="reboot-btn" class="btn btn-ghost btn-sm flex1" disabled>重启</button>
+        <button id="reboot-bl-btn" class="btn btn-ghost btn-sm flex1" disabled>→ BL</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="panel active" id="panel-queue">
+      <div class="card">
+        <div class="card-title">刷写队列</div>
+        <div class="card-sub">批量添加镜像，按序自动刷入，支持拖拽上传</div>
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="file-input" accept=".img" multiple>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p>点击或拖拽 .img 文件到这里</p><span>支持多选，可多次添加</span>
+        </div>
+        <div id="queue-wrap" class="queue-wrap"></div>
+        <div id="queue-empty" class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <div>队列为空，添加镜像开始</div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button id="start-queue-btn" class="btn btn-primary flex1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            开始队列刷入
+          </button>
+          <button id="clear-queue-btn" class="btn btn-ghost">清空</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">整体进度</div>
+        <div class="progress-wrap" style="margin-top:0">
+          <div class="progress-label"><span id="queue-prog-label">准备就绪</span><span id="queue-prog-pct">0%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="overall-fill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-single">
+      <div class="card">
+        <div class="card-title">单文件刷写</div>
+        <div class="card-sub">选择单个 .img 文件并指定目标分区</div>
+        <div class="dropzone" id="single-dropzone" style="margin-bottom:14px">
+          <input type="file" id="single-file" accept=".img">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p id="single-file-name">点击或拖拽 .img 文件</p><span id="single-file-size">选择文件后显示大小</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">目标分区</label>
+          <div class="row">
+            <select id="single-partition" class="input flex1">
+              <option value="">-- 从列表选择 --</option>
+              <option value="boot">boot</option><option value="boot_a">boot_a</option><option value="boot_b">boot_b</option>
+              <option value="recovery">recovery</option><option value="system">system</option>
+              <option value="system_a">system_a</option><option value="system_b">system_b</option>
+              <option value="vendor">vendor</option><option value="vendor_a">vendor_a</option><option value="vendor_b">vendor_b</option>
+              <option value="vbmeta">vbmeta</option><option value="vbmeta_a">vbmeta_a</option><option value="vbmeta_b">vbmeta_b</option>
+              <option value="dtbo">dtbo</option><option value="product">product</option><option value="odm">odm</option>
+            </select>
+            <input id="single-part-custom" type="text" class="input flex1" placeholder="或手动输入分区名">
+          </div>
+        </div>
+        <button id="single-flash-btn" class="btn btn-primary" style="width:100%">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          开始刷入
+        </button>
+        <div class="progress-wrap">
+          <div class="progress-label"><span id="single-prog-label">等待</span><span id="single-prog-pct">0%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="single-fill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-adv">
+      <div class="card">
+        <div class="card-title">高级命令</div>
+        <div class="card-sub">直接发送 Fastboot 协议命令并查看原始响应</div>
+        <div class="form-group">
+          <label class="form-label">命令</label>
+          <div class="cmd-row">
+            <input id="adv-cmd" type="text" class="input" placeholder="例：getvar all、erase userdata">
+            <button id="adv-run-btn" class="btn btn-primary">执行</button>
+            <button id="adv-clear-btn" class="btn btn-ghost">清空</button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">快捷命令</label>
+          <div class="row" style="flex-wrap:wrap;gap:6px">
+            <button class="btn btn-ghost btn-sm quick-cmd" data-cmd="getvar all">getvar all</button>
+            <button class="btn btn-ghost btn-sm quick-cmd" data-cmd="getvar product">getvar product</button>
+            <button class="btn btn-ghost btn-sm quick-cmd" data-cmd="getvar unlocked">getvar unlocked</button>
+            <button class="btn btn-ghost btn-sm quick-cmd" data-cmd="getvar max-download-size">max-download-size</button>
+            <button class="btn btn-ghost btn-sm quick-cmd" data-cmd="flashing unlock">flashing unlock</button>
+            <button class="btn btn-ghost btn-sm quick-cmd" data-cmd="flashing lock">flashing lock</button>
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <label class="form-label">输出</label>
+          <div id="adv-output" class="log-area" style="height:180px">[等待命令]</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">命令历史</div>
+        <div id="cmd-history"><div style="font-size:.8rem;color:var(--text3);padding:8px">暂无历史记录</div></div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-settings">
+      <div class="card">
+        <div class="card-title">自定义厂商 VID</div>
+        <div class="card-sub">添加额外 USB 厂商 ID（十六进制），用于连接非内置品牌设备</div>
+        <div id="vid-list"></div>
+        <button id="add-vid-btn" class="btn btn-ghost btn-sm" style="margin-top:8px">+ 添加 VID</button>
+      </div>
+      <div class="card">
+        <div class="card-title">传输块大小</div>
+        <div class="card-sub">默认 1MB，设备不兼容时可调小</div>
+        <select id="chunk-size-select" class="input">
+          <option value="1048576">1 MB（默认）</option>
+          <option value="524288">512 KB</option>
+          <option value="262144">256 KB</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-logs">
+      <div class="card">
+        <div class="row" style="margin-bottom:12px">
+          <div class="card-title flex1">操作日志</div>
+          <button id="clear-log-btn" class="btn btn-ghost btn-sm">清空</button>
+          <button id="copy-log-btn" class="btn btn-ghost btn-sm">复制</button>
+        </div>
+        <div id="log-area" class="log-area" style="height:420px"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const S = {
+  device:null,iface:null,epIn:null,epOut:null,
+  connected:false,lock:false,
+  queue:[],cmdHistory:[],customVIDs:[],chunkSize:1024*1024,
+};
+const DEFAULT_VIDS=[0x18d1,0x2717,0x04e8,0x0fce,0x2a70,0x1f3a,0x22d9,0x0bb4,0x2916];
+const PARTITIONS=['boot','recovery','system','vendor','vbmeta','dtbo','product','odm','super','userdata'];
+const $=id=>document.getElementById(id);
+
+function log(msg,type='info'){
+  const el=document.createElement('div');
+  el.className={ok:'log-ok',err:'log-err',warn:'log-warn',info:'log-info'}[type]||'';
+  el.textContent=`[${new Date().toLocaleTimeString()}] ${msg}`;
+  $('log-area').appendChild(el);$('log-area').scrollTop=$('log-area').scrollHeight;
+}
+function toast(msg,type='info'){
+  const el=document.createElement('div');el.className=`toast toast-${type}`;
+  el.innerHTML=`<span>${msg}</span>`;$('toast-wrap').appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  $(`panel-${btn.dataset.panel}`).classList.add('active');
+  closeSidebar();
+}));
+function closeSidebar(){$('sidebar').classList.remove('open');$('overlay').classList.remove('show');}
+$('menu-btn').addEventListener('click',()=>{$('sidebar').classList.toggle('open');$('overlay').classList.toggle('show');});
+$('overlay').addEventListener('click',closeSidebar);
+
+function findFastbootEPs(device){
+  for(const iface of device.configuration.interfaces){
+    for(const alt of iface.alternates){
+      if(alt.interfaceClass!==0xFF)continue;
+      let epIn=null,epOut=null;
+      for(const ep of alt.endpoints){
+        if(ep.type!=='bulk')continue;
+        if(ep.direction==='in')epIn=ep;else epOut=ep;
+      }
+      if(epIn&&epOut)return{ifaceNum:iface.interfaceNumber,epIn,epOut};
+    }
+  }
+  return null;
+}
+
+function updateConnUI(){
+  const ok=S.connected;
+  $('conn-badge').className=`badge ${ok?'badge-ok':'badge-idle'}`;
+  $('conn-text').textContent=ok?(S.device?.productName||'已连接'):'未连接';
+  $('connect-btn').textContent=ok?'断开':'连接设备';
+  $('device-name').textContent=ok?(S.device?.productName||'未知设备'):'未连接';
+  $('device-sub').textContent=ok?`${S.device.vendorId.toString(16).toUpperCase()}:${S.device.productId.toString(16).toUpperCase()}`:'请先连接设备';
+  [$('reboot-btn'),$('reboot-bl-btn')].forEach(b=>b.disabled=!ok);
+}
+
+$('connect-btn').addEventListener('click',async()=>{
+  if(S.connected){await disconnect();return;}
+  try{
+    const filters=[...DEFAULT_VIDS,...S.customVIDs].map(v=>({vendorId:v}));
+    const dev=await navigator.usb.requestDevice({filters});
+    S.device=dev;await dev.open();
+    if(dev.configuration===null)await dev.selectConfiguration(1);
+    const found=findFastbootEPs(dev);
+    if(!found)throw new Error('未找到 Fastboot 接口，请确认设备已进入 Fastboot 模式');
+    await dev.claimInterface(found.ifaceNum);
+    S.iface=found.ifaceNum;S.epIn=found.epIn;S.epOut=found.epOut;S.connected=true;
+    updateConnUI();log(`已连接 ${dev.productName||'设备'}(${dev.vendorId.toString(16)}:${dev.productId.toString(16)})`,'ok');
+    toast('设备已连接','ok');
+    try{const p=await fbCmd('getvar:product');$('device-sub').textContent='product: '+p;log('product: '+p,'info');}catch(_){}
+  }catch(e){log('连接失败: '+(e.message||e),'err');toast('连接失败: '+(e.message||e),'err');}
+});
+
+async function disconnect(){
+  try{if(S.device?.opened){if(S.iface!==null)await S.device.releaseInterface(S.iface);await S.device.close();}}catch(_){}
+  Object.assign(S,{device:null,iface:null,epIn:null,epOut:null,connected:false});
+  updateConnUI();log('已断开连接','warn');toast('已断开','info');
+}
+
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function acquireLock(){while(S.lock)await sleep(30);S.lock=true;}
+function releaseLock(){S.lock=false;}
+
+async function fbWrite(data){
+  const ep=S.epOut.endpointNumber;
+  await S.device.transferOut(ep,data);
+  if(data.byteLength%S.epOut.packetSize===0)await S.device.transferOut(ep,new Uint8Array(0));
+}
+async function fbRead(){
+  const res=await S.device.transferIn(S.epIn.endpointNumber,S.epIn.packetSize);
+  return new TextDecoder().decode(res.data);
+}
+async function fbCmd(cmd){
+  if(!S.connected)throw new Error('未连接设备');
+  await acquireLock();
+  try{
+    await fbWrite(new TextEncoder().encode(cmd));
+    let out='';
+    for(let i=0;i<128;i++){
+      const r=await fbRead(),pfx=r.slice(0,4),body=r.slice(4);
+      if(pfx==='OKAY'){out+=body;break;}
+      if(pfx==='FAIL')throw new Error(body||'未知错误');
+      if(pfx==='INFO'){out+=body+'\n';continue;}
+      if(pfx==='DATA'){out=r;break;}
+      out=r;break;
+    }
+    return out.trim();
+  }finally{releaseLock();}
+}
+
+async function flashImage(file,partition,onProgress){
+  if(!S.connected)throw new Error('未连接设备');
+  const total=file.size,sizeHex=total.toString(16).padStart(8,'0');
+  log(`传输 ${file.name} (${(total/1024/1024).toFixed(2)} MB) → ${partition}`);
+  await acquireLock();
+  try{
+    await fbWrite(new TextEncoder().encode(`download:${sizeHex}`));
+    const ack=await fbRead();
+    if(!ack.startsWith('DATA'))throw new Error('download 无响应: '+ack);
+    const epOut=S.epOut.endpointNumber;
+    for(let offset=0;offset<total;offset+=S.chunkSize){
+      const buf=await file.slice(offset,Math.min(offset+S.chunkSize,total)).arrayBuffer();
+      await S.device.transferOut(epOut,buf);
+      if(buf.byteLength%S.epOut.packetSize===0)await S.device.transferOut(epOut,new Uint8Array(0));
+      onProgress&&onProgress(Math.min(((offset+buf.byteLength)/total)*100,100));
+    }
+    const done=await fbRead();log('传输完成: '+done.trim(),'info');
+    await fbWrite(new TextEncoder().encode(`flash:${partition}`));
+    for(let i=0;i<32;i++){
+      const r=await fbRead();
+      if(r.startsWith('OKAY')){log(`刷写完成: ${partition}`,'ok');break;}
+      if(r.startsWith('FAIL'))throw new Error(r.slice(4));
+      if(r.startsWith('INFO')){log('INFO: '+r.slice(4),'info');continue;}
+      break;
+    }
+  }finally{releaseLock();}
+}
+
+function guessPartition(name){
+  const n=name.toLowerCase().replace(/\.(img|bin)$/,'');
+  if(PARTITIONS.includes(n))return n;
+  for(const p of PARTITIONS)if(n===p+'_a'||n===p+'_b')return n;
+  for(const p of PARTITIONS)if(n.includes(p))return p;
+  return '';
+}
+
+function renderQueue(){
+  const wrap=$('queue-wrap');
+  $('queue-empty').style.display=S.queue.length?'none':'';
+  wrap.innerHTML='';
+  const lbl={flashing:'⬆ 刷写中',done:'✓ 完成',failed:'✗ 失败','':'等待'};
+  S.queue.forEach((item,idx)=>{
+    const el=document.createElement('div');el.className=`queue-item ${item.status||''}`;
+    el.innerHTML=`
+      <div><div class="q-name" title="${item.file.name}">${item.file.name}</div><div class="q-size">${(item.file.size/1024/1024).toFixed(2)} MB</div></div>
+      <div class="q-part-cell"><input type="text" class="input btn-sm" value="${item.partition}" placeholder="分区名" data-idx="${idx}" style="width:100%"></div>
+      <div style="font-size:.72rem;font-weight:600;min-width:52px;text-align:center">${lbl[item.status]||'等待'}</div>
+      <button class="btn btn-ghost btn-icon btn-sm" data-up="${idx}">↑</button>
+      <button class="btn btn-ghost btn-icon btn-sm" data-del="${item.id}">✕</button>`;
+    wrap.appendChild(el);
+  });
+  wrap.querySelectorAll('[data-up]').forEach(b=>b.addEventListener('click',()=>{
+    const i=+b.dataset.up;if(i>0){[S.queue[i-1],S.queue[i]]=[S.queue[i],S.queue[i-1]];renderQueue();}
+  }));
+  wrap.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
+    S.queue=S.queue.filter(q=>q.id!==b.dataset.del);renderQueue();
+  }));
+  wrap.querySelectorAll('[data-idx]').forEach(inp=>inp.addEventListener('change',e=>{
+    S.queue[+e.target.dataset.idx].partition=e.target.value.trim();
+  }));
+}
+
+function addToQueue(files){
+  Array.from(files).forEach(f=>S.queue.push({id:crypto.randomUUID(),file:f,partition:guessPartition(f.name),status:''}));
+  renderQueue();
+}
+function setupDrop(zone,inp,cb){
+  zone.addEventListener('click',()=>inp.click());
+  inp.addEventListener('change',e=>{cb(e.target.files);inp.value='';});
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('drag'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag');cb(e.dataTransfer.files);});
+}
+setupDrop($('dropzone'),$('file-input'),addToQueue);
+setupDrop($('single-dropzone'),$('single-file'),files=>{
+  const f=files[0];if(!f)return;
+  $('single-file-name').textContent=f.name;
+  $('single-file-size').textContent=(f.size/1024/1024).toFixed(2)+' MB';
+  $('single-partition').value=guessPartition(f.name)||'';
+  $('single-dropzone')._file=f;
+});
+$('clear-queue-btn').addEventListener('click',()=>{S.queue=[];renderQueue();});
+$('start-queue-btn').addEventListener('click',async()=>{
+  if(!S.connected)return toast('请先连接设备','err');
+  if(!S.queue.length)return toast('队列为空','err');
+  const bad=S.queue.find(q=>!q.partition);
+  if(bad)return toast(`请为 "${bad.file.name}" 设置分区`,'err');
+  $('start-queue-btn').disabled=true;
+  for(let i=0;i<S.queue.length;i++){
+    const item=S.queue[i];item.status='flashing';renderQueue();
+    $('queue-prog-label').textContent=`${i+1}/${S.queue.length}: ${item.file.name}`;
+    try{
+      await flashImage(item.file,item.partition,pct=>{
+        const ov=((i+pct/100)/S.queue.length)*100;
+        $('overall-fill').style.width=ov+'%';$('queue-prog-pct').textContent=Math.round(ov)+'%';
+      });
+      item.status='done';
+    }catch(e){item.status='failed';log(`第${i+1}项失败: ${e.message}`,'err');toast(`${item.file.name} 失败`,'err');}
+    renderQueue();
+  }
+  $('overall-fill').style.width='100%';$('queue-prog-pct').textContent='100%';
+  $('queue-prog-label').textContent='完成';$('start-queue-btn').disabled=false;
+  toast('队列刷写完成','ok');log('队列全部完成','ok');
+});
+
+$('single-flash-btn').addEventListener('click',async()=>{
+  if(!S.connected)return toast('请先连接设备','err');
+  const f=$('single-dropzone')._file;
+  const part=$('single-part-custom').value.trim()||$('single-partition').value;
+  if(!f)return toast('请选择文件','err');if(!part)return toast('请指定分区','err');
+  $('single-flash-btn').disabled=true;$('single-prog-label').textContent='传输中...';
+  try{
+    await flashImage(f,part,pct=>{
+      $('single-fill').style.width=pct+'%';$('single-prog-pct').textContent=Math.round(pct)+'%';
+    });
+    $('single-fill').classList.add('success');$('single-prog-label').textContent='刷写完成';toast('刷写成功','ok');
+  }catch(e){log('刷写失败: '+e.message,'err');toast('刷写失败: '+e.message,'err');$('single-prog-label').textContent='失败';}
+  $('single-flash-btn').disabled=false;
+});
+
+async function runCmd(cmd){
+  if(!cmd)return;if(!S.connected)return toast('请先连接设备','err');
+  $('adv-output').textContent=`> ${cmd}\n`;log('执行: '+cmd,'info');
+  try{const res=await fbCmd(cmd);$('adv-output').textContent+=res||'(空响应)';log('返回: '+res,'ok');}
+  catch(e){$('adv-output').textContent+='错误: '+e.message;log('命令失败: '+e.message,'err');}
+  S.cmdHistory=[cmd,...S.cmdHistory.filter(c=>c!==cmd)].slice(0,10);renderHistory();
+}
+$('adv-run-btn').addEventListener('click',()=>runCmd($('adv-cmd').value.trim()));
+$('adv-cmd').addEventListener('keydown',e=>{if(e.key==='Enter')runCmd($('adv-cmd').value.trim());});
+$('adv-clear-btn').addEventListener('click',()=>{$('adv-output').textContent='[等待命令]';});
+document.querySelectorAll('.quick-cmd').forEach(b=>b.addEventListener('click',()=>{$('adv-cmd').value=b.dataset.cmd;runCmd(b.dataset.cmd);}));
+function renderHistory(){
+  const h=$('cmd-history');
+  if(!S.cmdHistory.length){h.innerHTML='<div style="font-size:.8rem;color:var(--text3);padding:8px">暂无历史</div>';return;}
+  h.innerHTML=S.cmdHistory.map(c=>`<div class="adv-hist-item" data-cmd="${c}"><span>${c}</span><span style="color:var(--text3);font-size:.7rem">点击复用</span></div>`).join('');
+  h.querySelectorAll('[data-cmd]').forEach(el=>el.addEventListener('click',()=>{$('adv-cmd').value=el.dataset.cmd;}));
+}
+
+$('reboot-btn').addEventListener('click',async()=>{try{await fbCmd('reboot');toast('重启中...','ok');}catch(e){toast('重启失败','err');}});
+$('reboot-bl-btn').addEventListener('click',async()=>{try{await fbCmd('reboot-bootloader');toast('重启至 Bootloader...','ok');}catch(e){toast('失败','err');}});
+
+function renderVIDs(){
+  const list=$('vid-list');
+  list.innerHTML=[...DEFAULT_VIDS.map(v=>({v,c:false})),...S.customVIDs.map(v=>({v,c:true}))].map(({v,c})=>
+    `<div class="vid-row">
+      <input type="text" class="input btn-sm" value="0x${v.toString(16).toUpperCase()}" ${c?'':'readonly'} style="flex:1;font-family:monospace;color:${c?'var(--text)':'var(--text3)'}">
+      <span class="chip">${c?'自定义':'内置'}</span>
+      ${c?`<button class="btn btn-danger btn-icon btn-sm" data-vid="${v}">✕</button>`:''}
+    </div>`).join('');
+  list.querySelectorAll('[data-vid]').forEach(b=>b.addEventListener('click',()=>{S.customVIDs=S.customVIDs.filter(x=>x!==+b.dataset.vid);renderVIDs();}));
+}
+$('add-vid-btn').addEventListener('click',()=>{
+  const raw=prompt('输入厂商 VID（如 0x1234）');if(!raw)return;
+  const num=parseInt(raw.replace(/^0x/i,''),16);
+  if(isNaN(num)||num<=0||num>0xFFFF)return toast('VID 格式无效','err');
+  if([...DEFAULT_VIDS,...S.customVIDs].includes(num))return toast('VID 已存在','err');
+  S.customVIDs.push(num);renderVIDs();toast('VID 已添加','ok');
+});
+$('chunk-size-select').addEventListener('change',e=>{S.chunkSize=+e.target.value;log(`传输块: ${S.chunkSize/1024} KB`,'info');});
+
+$('clear-log-btn').addEventListener('click',()=>{$('log-area').innerHTML='';log('日志已清空','info');});
+$('copy-log-btn').addEventListener('click',()=>{navigator.clipboard.writeText($('log-area').innerText).then(()=>toast('已复制','ok'));});
+
+if(!navigator.usb){log('浏览器不支持 WebUSB，请使用 Chrome 或 Edge','err');toast('请使用 Chrome/Edge','err');}
+renderVIDs();renderQueue();renderHistory();updateConnUI();
+log('工具就绪 v4.0 — 流式传输 · 完整协议 · 接口自动枚举','ok');
+</script>
+</body>
+</html>
