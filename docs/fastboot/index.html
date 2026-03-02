@@ -577,7 +577,7 @@ $('chunk-size-select').addEventListener('change',e=>{S.chunkSize=+e.target.value
 $('clear-log-btn').addEventListener('click',()=>{$('log-area').innerHTML='';log('日志已清空','info');});
 $('copy-log-btn').addEventListener('click',()=>{navigator.clipboard.writeText($('log-area').innerText).then(()=>toast('已复制','ok'));});
 
-if(!navigator.usb){log('浏览器不支持 WebUSB，请使用 Chrome 或 Edge','err');toast('请使用 Chrome/Edge','err');}
+if(!navigator.usb){log('浏览器不支持 WebUSB，请使用 Chrome 或 Edge','err');toast('请使用Chrome或Edge浏览器','err');}
 renderVIDs();renderQueue();renderHistory();updateConnUI();
 log('工具就绪 — 流式传输 · 完整协议 · 接口自动枚举','ok');
 </script>
