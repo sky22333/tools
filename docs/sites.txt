@@ -53,6 +53,11 @@ Augment Code, https://www.augmentcode.com/
 腾讯CodeBuddy, https://www.codebuddy.ai
 谷歌antigravity, https://antigravity.google/
 
+## AI技能合集
+Skills中文站, https://cc-ai.cn/skills-cn/frontend/index.html
+Agent-Skills-指南, https://github.com/libukai/awesome-agent-skills
+腾讯技能社区, https://skillhub.tencent.com/
+
 ## 前端工具
 Tailwind CSS, https://tailwindcss.com
 Shadcn UI, https://ui.shadcn.com
