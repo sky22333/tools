@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>资源导航</title>
     <link rel="icon" href="favicon.ico">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
@@ -13,7 +13,10 @@
             theme: {
                 extend: {
                     colors: { paper: '#f5f3ef', ink: '#1f1f1f', accent: '#cc785c' },
-                    fontFamily: { sans: ['"Noto Sans SC"', 'sans-serif'], mono: ['"Space Grotesk"', 'monospace'] }
+                    fontFamily: { 
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+                        serif: ['"Noto Serif SC"', 'serif']
+                    }
                 }
             }
         }
@@ -21,11 +24,11 @@
     <style>
         body { background-color: #f5f3ef; color: #1f1f1f; scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
         section { content-visibility: auto; contain-intrinsic-size: 1px 500px; scroll-margin-top: 100px; }
-        .brutal-card { background: #F8F8F6; border: 1px solid #e5e1d8; border-radius: 16px; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s ease, box-shadow 0.4s ease, background-color 0.3s ease; }
+        .brutal-card { background: #F8F8F6; border: 1px solid #e5e1d8; border-radius: 12px; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s ease, box-shadow 0.4s ease, background-color 0.3s ease; }
         @media (min-width: 1024px) {
-            .brutal-card:hover { transform: translateY(-2px); border-color: #cc785c; background-color: #fffcf7; box-shadow: 0 8px 24px -4px rgba(204, 120, 92, 0.15); }
+            .brutal-card:hover { transform: translateY(-2px); border-color: #cc785c; background-color: #fffcf7; box-shadow: 0 8px 20px -4px rgba(204, 120, 92, 0.12); }
         }
-        .nav-item { border-radius: 10px; margin: 2px 8px; transition: all 0.2s; cursor: pointer; font-family: 'Space Grotesk', monospace; color: #6b6b6b; }
+        .nav-item { border-radius: 8px; margin: 2px 8px; transition: all 0.2s; cursor: pointer; font-weight: 500; color: #6b6b6b; }
         .nav-item:hover, .nav-item.active { background-color: #ebe7dd; color: #cc785c; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -40,13 +43,13 @@
     <header class="sticky top-0 z-40 bg-[#f5f3ef]/90 backdrop-blur-xl border-b border-[#e5e1d8] px-4 md:px-6 py-3">
         <div class="max-w-[1600px] mx-auto flex justify-between items-center gap-2 md:gap-4">
             <div class="flex items-center gap-2 shrink-0">
-                <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-[#F8F8F6] italic font-black text-xs shrink-0">N</div>
-                <h1 class="font-mono font-bold text-base md:text-lg tracking-tight hidden sm:block text-[#1f1f1f] uppercase">资源导航</h1>
+                <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-[#F8F8F6] italic font-black text-xs shrink-0 font-serif">N</div>
+                <h1 class="font-serif font-bold text-base md:text-lg tracking-tight hidden sm:block text-[#1f1f1f]">资源导航</h1>
             </div>
             <div class="flex items-center gap-2 flex-grow justify-end max-w-2xl">
                 <div class="relative flex-grow">
                     <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8b8680]"></i>
-                    <input type="text" id="searchInput" placeholder="搜索资源..." class="w-full bg-[#F8F8F6] border border-[#e5e1d8] rounded-xl py-2 pl-10 pr-4 text-xs font-bold text-[#1f1f1f] placeholder-[#a39e95] focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all outline-none font-sans">
+                    <input type="text" id="searchInput" placeholder="搜索资源..." class="w-full bg-[#F8F8F6] border border-[#e5e1d8] rounded-xl py-2 pl-10 pr-4 text-xs font-semibold text-[#1f1f1f] placeholder-[#a39e95] focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all outline-none font-sans">
                 </div>
                 <button id="mobileMenuBtn" class="lg:hidden p-2 bg-[#F8F8F6] border border-[#e5e1d8] hover:bg-[#ebe7dd] hover:border-accent rounded-xl transition-colors shrink-0 text-[#1f1f1f]">
                     <i data-lucide="layout-grid" class="w-5 h-5"></i>
@@ -56,11 +59,11 @@
     </header>
 
     <div class="max-w-[1600px] mx-auto flex gap-6 p-4 md:p-6">
-        <aside class="hidden lg:block w-56 shrink-0">
+        <aside class="hidden lg:block w-52 shrink-0">
             <div class="sticky top-24 flex flex-col bg-[#F8F8F6] border border-[#e5e1d8] rounded-2xl shadow-sm h-[calc(100vh-120px)] overflow-hidden">
                 <div class="px-5 py-4 border-b border-[#e5e1d8] flex justify-between items-center shrink-0">
-                    <span class="text-[10px] font-black text-[#8b8680] uppercase tracking-widest font-mono">分类索引</span>
-                    <span id="category-count" class="bg-[#f5f3ef] text-[#1f1f1f] px-2 py-0.5 rounded-full text-[10px] font-bold font-mono border border-[#e5e1d8]">0</span>
+                    <span class="text-[10px] font-bold text-[#8b8680] uppercase tracking-widest font-sans">分类索引</span>
+                    <span id="category-count" class="bg-[#f5f3ef] text-[#1f1f1f] px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#e5e1d8]">0</span>
                 </div>
                 <div id="categoryMenuList" class="flex-grow overflow-y-auto no-scrollbar py-2 text-[#6b6b6b]"></div>
             </div>
@@ -71,7 +74,7 @@
             <div id="emptyState" class="hidden py-40 text-center">
                 <div class="bg-[#F8F8F6] inline-block px-10 py-6 rounded-3xl border border-dashed border-[#e5e1d8]">
                     <i data-lucide="layers" class="w-10 h-10 mx-auto mb-4 text-[#d4cfc3]"></i>
-                    <p class="text-[#8b8680] font-bold italic font-mono">未发现匹配的导航资源</p>
+                    <p class="text-[#8b8680] font-medium italic">未发现匹配的导航资源</p>
                 </div>
             </div>
         </main>
@@ -80,7 +83,7 @@
     <div id="drawerOverlay" class="fixed inset-0 bg-[#1f1f1f]/20 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity"></div>
     <div id="mobileDrawer" class="fixed bottom-0 left-0 right-0 bg-[#F8F8F6] border-t border-[#e5e1d8] z-50 rounded-t-[32px] p-6 max-h-[80vh] flex flex-col lg:hidden shadow-2xl">
         <div class="w-12 h-1.5 bg-[#e5e1d8] rounded-full mx-auto mb-6 shrink-0"></div>
-        <h3 class="font-mono font-bold text-lg mb-4 px-2 uppercase tracking-tight text-[#1f1f1f]">分类索引</h3>
+        <h3 class="font-serif font-bold text-lg mb-4 px-2 tracking-tight text-[#1f1f1f]">分类索引</h3>
         <div id="mobileCategoryList" class="overflow-y-auto no-scrollbar space-y-1"></div>
     </div>
 
@@ -93,7 +96,7 @@
             if (avatarCache.has(name)) return avatarCache.get(name);
             const color = AVATAR_COLORS[name.length % AVATAR_COLORS.length];
             const char = name.charAt(0).toUpperCase();
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="30" fill="${color}"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="50" font-weight="bold" fill="white" font-family="system-ui">${char}</text></svg>`;
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="30" fill="${color}"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="50" font-weight="bold" fill="white" font-family="Inter, system-ui">${char}</text></svg>`;
             const base64 = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
             avatarCache.set(name, base64);
             return base64;
@@ -128,46 +131,39 @@
             const gridFrag = document.createDocumentFragment();
             const deskFrag = document.createDocumentFragment();
             const mobFrag = document.createDocumentFragment();
-
             document.getElementById('category-count').innerText = data.length;
-
             data.forEach((cat, idx) => {
                 const dItem = document.createElement('div');
-                dItem.className = "nav-item px-5 py-2.5 text-xs font-bold truncate";
+                dItem.className = "nav-item px-5 py-2 text-xs font-semibold truncate";
                 dItem.innerText = cat.name;
                 dItem.onclick = () => window.scrollTo({ top: document.getElementById(`section-${idx}`).offsetTop - 100 });
                 deskFrag.appendChild(dItem);
-
                 const mItem = document.createElement('div');
-                mItem.className = "px-5 py-4 text-base font-bold border-b border-[#e5e1d8] active:bg-[#f5f3ef] rounded-xl font-mono uppercase tracking-tight text-[#6b6b6b]";
+                mItem.className = "px-5 py-4 text-base font-bold border-b border-[#e5e1d8] active:bg-[#f5f3ef] rounded-xl tracking-tight text-[#6b6b6b]";
                 mItem.innerText = cat.name;
                 mItem.onclick = () => { toggleDrawer(false); setTimeout(() => window.scrollTo({ top: document.getElementById(`section-${idx}`).offsetTop - 90 }), 350); };
                 mobFrag.appendChild(mItem);
-
                 const section = document.createElement('section');
                 section.id = `section-${idx}`;
                 section.className = "space-y-4";
-                section.innerHTML = `<div class="flex items-center gap-3"><h2 class="font-mono font-black text-sm uppercase tracking-tight text-[#1f1f1f]">${cat.name}</h2><div class="h-px bg-[#e5e1d8] flex-grow"></div></div>`;
-
+                section.innerHTML = `<div class="flex items-center gap-3"><h2 class="font-serif font-bold text-sm tracking-tight text-[#1f1f1f] uppercase">${cat.name}</h2><div class="h-px bg-[#e5e1d8] flex-grow"></div></div>`;
                 const cardGrid = document.createElement('div');
-                cardGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-4";
-
+                cardGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-3.5";
                 cat.sites.forEach(site => {
                     const domain = new URL(site.url).hostname;
                     const placeholder = getAvatar(site.name);
                     const realIcon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128&default=404`;
-                    
                     const a = document.createElement('a');
                     a.href = site.url;
                     a.target = "_blank";
-                    a.className = "brutal-card p-3 flex items-center gap-3 group active:scale-[0.98] lg:active:scale-100 transition-transform";
+                    a.className = "brutal-card p-2.5 flex items-center gap-2.5 group active:scale-[0.98] lg:active:scale-100 transition-transform";
                     a.innerHTML = `
-                        <div class="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-[#f5f3ef] flex items-center justify-center border border-[#e5e1d8]">
-                            <img src="${placeholder}" data-src="${realIcon}" class="w-6 h-6 object-contain site-icon" alt="">
+                        <div class="w-9 h-9 rounded-lg overflow-hidden shrink-0 bg-[#f5f3ef] flex items-center justify-center border border-[#e5e1d8]">
+                            <img src="${placeholder}" data-src="${realIcon}" class="w-5 h-5 object-contain site-icon" alt="">
                         </div>
                         <div class="min-w-0">
-                            <div class="text-[11px] font-bold text-[#1f1f1f] truncate group-hover:text-accent transition-colors">${site.name}</div>
-                            <div class="text-[9px] text-[#8b8680] truncate font-mono">${domain}</div>
+                            <div class="text-[11.5px] font-semibold text-[#1f1f1f] truncate group-hover:text-accent transition-colors leading-tight">${site.name}</div>
+                            <div class="text-[9px] text-[#8b8680] truncate font-sans mt-0.5 opacity-70">${domain}</div>
                         </div>
                     `;
                     cardGrid.appendChild(a);
@@ -176,7 +172,6 @@
                 section.appendChild(cardGrid);
                 gridFrag.appendChild(section);
             });
-
             grid.innerHTML = ''; deskMenu.innerHTML = ''; mobMenu.innerHTML = '';
             grid.appendChild(gridFrag); deskMenu.appendChild(deskFrag); mobMenu.appendChild(mobFrag);
             document.getElementById('emptyState').classList.toggle('hidden', data.length > 0);
@@ -241,7 +236,6 @@
                 render(filtered);
             }, 300);
         });
-
         window.onload = init;
     </script>
 </body>
