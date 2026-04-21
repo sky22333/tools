@@ -12,21 +12,21 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: { paper: '#f8f8f6', ink: '#1a1a1a', kblue: '#002fa7' },
+                    colors: { paper: '#f5f3ef', ink: '#1f1f1f', accent: '#cc785c' },
                     fontFamily: { sans: ['"Noto Sans SC"', 'sans-serif'], mono: ['"Space Grotesk"', 'monospace'] }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #f8f8f6; background-image: radial-gradient(#e0e0de 0.5px, transparent 0.5px); background-size: 20px 20px; color: #1a1a1a; scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; font-family: 'Noto Sans SC', sans-serif; }
+        body { background-color: #f5f3ef; color: #1f1f1f; scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
         section { content-visibility: auto; contain-intrinsic-size: 1px 500px; scroll-margin-top: 100px; }
-        .brutal-card { background: #fefefe; border: 1.5px solid #e5dfd0; border-radius: 16px; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s ease, box-shadow 0.4s ease; will-change: transform; }
+        .brutal-card { background: #F8F8F6; border: 1px solid #e5e1d8; border-radius: 16px; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s ease, box-shadow 0.4s ease, background-color 0.3s ease; }
         @media (min-width: 1024px) {
-            .brutal-card:hover { transform: translateY(-2px); border-color: #002fa7; box-shadow: 0 8px 16px -4px rgba(0, 42, 167, 0.18); }
+            .brutal-card:hover { transform: translateY(-2px); border-color: #cc785c; background-color: #fffcf7; box-shadow: 0 8px 24px -4px rgba(204, 120, 92, 0.15); }
         }
-        .nav-item { border-radius: 10px; margin: 2px 8px; transition: all 0.2s; cursor: pointer; font-family: 'Space Grotesk', monospace; }
-        .nav-item:hover, .nav-item.active { background-color: #002fa7; color: #fff; }
+        .nav-item { border-radius: 10px; margin: 2px 8px; transition: all 0.2s; cursor: pointer; font-family: 'Space Grotesk', monospace; color: #6b6b6b; }
+        .nav-item:hover, .nav-item.active { background-color: #ebe7dd; color: #cc785c; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         #mobileDrawer { transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -37,18 +37,18 @@
 </head>
 <body class="min-h-screen font-sans text-sm pb-10">
 
-    <header class="sticky top-0 z-40 bg-paper/90 backdrop-blur-md border-b border-[#d4c5a9] px-4 md:px-6 py-3">
+    <header class="sticky top-0 z-40 bg-[#f5f3ef]/90 backdrop-blur-xl border-b border-[#e5e1d8] px-4 md:px-6 py-3">
         <div class="max-w-[1600px] mx-auto flex justify-between items-center gap-2 md:gap-4">
             <div class="flex items-center gap-2 shrink-0">
-                <div class="w-8 h-8 bg-kblue rounded-lg flex items-center justify-center text-white italic font-black text-xs shrink-0">N</div>
-                <h1 class="font-mono font-bold text-base md:text-lg tracking-tight hidden sm:block text-ink uppercase">资源导航</h1>
+                <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-[#F8F8F6] italic font-black text-xs shrink-0">N</div>
+                <h1 class="font-mono font-bold text-base md:text-lg tracking-tight hidden sm:block text-[#1f1f1f] uppercase">资源导航</h1>
             </div>
             <div class="flex items-center gap-2 flex-grow justify-end max-w-2xl">
                 <div class="relative flex-grow">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8b7355]"></i>
-                    <input type="text" id="searchInput" placeholder="搜索资源..." class="w-full bg-[#fefefe] border border-[#e5dfd0] rounded-xl py-2 pl-10 pr-4 text-xs font-bold focus:ring-2 focus:ring-kblue/20 transition-all outline-none font-sans">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8b8680]"></i>
+                    <input type="text" id="searchInput" placeholder="搜索资源..." class="w-full bg-[#F8F8F6] border border-[#e5e1d8] rounded-xl py-2 pl-10 pr-4 text-xs font-bold text-[#1f1f1f] placeholder-[#a39e95] focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all outline-none font-sans">
                 </div>
-                <button id="mobileMenuBtn" class="lg:hidden p-2 bg-[#fefefe] border border-[#e5dfd0] hover:bg-kblue hover:text-white hover:border-kblue rounded-xl transition-colors shrink-0">
+                <button id="mobileMenuBtn" class="lg:hidden p-2 bg-[#F8F8F6] border border-[#e5e1d8] hover:bg-[#ebe7dd] hover:border-accent rounded-xl transition-colors shrink-0 text-[#1f1f1f]">
                     <i data-lucide="layout-grid" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -57,36 +57,36 @@
 
     <div class="max-w-[1600px] mx-auto flex gap-6 p-4 md:p-6">
         <aside class="hidden lg:block w-56 shrink-0">
-            <div class="sticky top-24 flex flex-col bg-[#fefefe] border border-[#e5dfd0] rounded-2xl shadow-sm h-[calc(100vh-120px)] overflow-hidden">
-                <div class="px-5 py-4 border-b border-[#f0ebe0] flex justify-between items-center shrink-0">
-                    <span class="text-[10px] font-black text-[#9a8a70] uppercase tracking-widest font-mono">分类索引</span>
-                    <span id="category-count" class="bg-[#f0ebe0] text-[#6a5a4a] px-2 py-0.5 rounded-full text-[10px] font-bold font-mono">0</span>
+            <div class="sticky top-24 flex flex-col bg-[#F8F8F6] border border-[#e5e1d8] rounded-2xl shadow-sm h-[calc(100vh-120px)] overflow-hidden">
+                <div class="px-5 py-4 border-b border-[#e5e1d8] flex justify-between items-center shrink-0">
+                    <span class="text-[10px] font-black text-[#8b8680] uppercase tracking-widest font-mono">分类索引</span>
+                    <span id="category-count" class="bg-[#f5f3ef] text-[#1f1f1f] px-2 py-0.5 rounded-full text-[10px] font-bold font-mono border border-[#e5e1d8]">0</span>
                 </div>
-                <div id="categoryMenuList" class="flex-grow overflow-y-auto no-scrollbar py-2 text-[#6a5a4a]"></div>
+                <div id="categoryMenuList" class="flex-grow overflow-y-auto no-scrollbar py-2 text-[#6b6b6b]"></div>
             </div>
         </aside>
 
         <main class="flex-grow min-w-0">
             <div id="siteGrid" class="space-y-8 md:space-y-10"></div>
             <div id="emptyState" class="hidden py-40 text-center">
-                <div class="bg-[#fefefe] inline-block px-10 py-6 rounded-3xl border border-dashed border-[#e5dfd0]">
-                    <i data-lucide="layers" class="w-10 h-10 mx-auto mb-4 text-[#d5cfc0]"></i>
-                    <p class="text-[#9a8a70] font-bold italic font-mono">未发现匹配的导航资源</p>
+                <div class="bg-[#F8F8F6] inline-block px-10 py-6 rounded-3xl border border-dashed border-[#e5e1d8]">
+                    <i data-lucide="layers" class="w-10 h-10 mx-auto mb-4 text-[#d4cfc3]"></i>
+                    <p class="text-[#8b8680] font-bold italic font-mono">未发现匹配的导航资源</p>
                 </div>
             </div>
         </main>
     </div>
 
-    <div id="drawerOverlay" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity"></div>
-    <div id="mobileDrawer" class="fixed bottom-0 left-0 right-0 bg-[#fefefe] border-t border-[#e5dfd0] z-50 rounded-t-[32px] p-6 max-h-[80vh] flex flex-col lg:hidden">
-        <div class="w-12 h-1.5 bg-[#d5cfc0] rounded-full mx-auto mb-6 shrink-0"></div>
-        <h3 class="font-mono font-bold text-lg mb-4 px-2 uppercase tracking-tight text-ink">分类索引</h3>
+    <div id="drawerOverlay" class="fixed inset-0 bg-[#1f1f1f]/20 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity"></div>
+    <div id="mobileDrawer" class="fixed bottom-0 left-0 right-0 bg-[#F8F8F6] border-t border-[#e5e1d8] z-50 rounded-t-[32px] p-6 max-h-[80vh] flex flex-col lg:hidden shadow-2xl">
+        <div class="w-12 h-1.5 bg-[#e5e1d8] rounded-full mx-auto mb-6 shrink-0"></div>
+        <h3 class="font-mono font-bold text-lg mb-4 px-2 uppercase tracking-tight text-[#1f1f1f]">分类索引</h3>
         <div id="mobileCategoryList" class="overflow-y-auto no-scrollbar space-y-1"></div>
     </div>
 
     <script>
         let allData = [];
-        const AVATAR_COLORS = ['#4776E6', '#8E54E9', '#11998e', '#38ef7d', '#F2994A', '#EB5757', '#2F80ED'];
+        const AVATAR_COLORS = ['#cc785c', '#b8956a', '#a67c52', '#d4a574', '#c89b6e', '#b88860', '#d49a6a'];
         const avatarCache = new Map();
 
         function getAvatar(name) {
@@ -139,7 +139,7 @@
                 deskFrag.appendChild(dItem);
 
                 const mItem = document.createElement('div');
-                mItem.className = "px-5 py-4 text-base font-bold border-b border-[#f0ebe0] active:bg-[#f8f8f6] rounded-xl font-mono uppercase tracking-tight text-[#6a5a4a]";
+                mItem.className = "px-5 py-4 text-base font-bold border-b border-[#e5e1d8] active:bg-[#f5f3ef] rounded-xl font-mono uppercase tracking-tight text-[#6b6b6b]";
                 mItem.innerText = cat.name;
                 mItem.onclick = () => { toggleDrawer(false); setTimeout(() => window.scrollTo({ top: document.getElementById(`section-${idx}`).offsetTop - 90 }), 350); };
                 mobFrag.appendChild(mItem);
@@ -147,7 +147,7 @@
                 const section = document.createElement('section');
                 section.id = `section-${idx}`;
                 section.className = "space-y-4";
-                section.innerHTML = `<div class="flex items-center gap-3"><h2 class="font-mono font-black text-sm uppercase tracking-tight text-ink">${cat.name}</h2><div class="h-0.5 bg-[#e5dfd0] flex-grow"></div></div>`;
+                section.innerHTML = `<div class="flex items-center gap-3"><h2 class="font-mono font-black text-sm uppercase tracking-tight text-[#1f1f1f]">${cat.name}</h2><div class="h-px bg-[#e5e1d8] flex-grow"></div></div>`;
 
                 const cardGrid = document.createElement('div');
                 cardGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-4";
@@ -162,12 +162,12 @@
                     a.target = "_blank";
                     a.className = "brutal-card p-3 flex items-center gap-3 group active:scale-[0.98] lg:active:scale-100 transition-transform";
                     a.innerHTML = `
-                        <div class="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-[#faf9f5] flex items-center justify-center border border-[#f0ebe0]">
+                        <div class="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-[#f5f3ef] flex items-center justify-center border border-[#e5e1d8]">
                             <img src="${placeholder}" data-src="${realIcon}" class="w-6 h-6 object-contain site-icon" alt="">
                         </div>
                         <div class="min-w-0">
-                            <div class="text-[11px] font-bold text-[#3a3a3a] truncate group-hover:text-kblue transition-colors">${site.name}</div>
-                            <div class="text-[9px] text-[#9a8a70] truncate font-mono">${domain}</div>
+                            <div class="text-[11px] font-bold text-[#1f1f1f] truncate group-hover:text-accent transition-colors">${site.name}</div>
+                            <div class="text-[9px] text-[#8b8680] truncate font-mono">${domain}</div>
                         </div>
                     `;
                     cardGrid.appendChild(a);
