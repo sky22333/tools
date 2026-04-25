@@ -64,10 +64,11 @@ Vercel出品的Skills排行榜, https://skills.sh/
 MCP和技能大全, https://mcpmarket.com/zh
 
 ## 前端工具
+tool开发工具箱, https://tool.ip138.com/
+前端在线工具, https://www.strerr.com/cn/tools.html
+html在线预览, https://www.ecjson.com/htmldebug/
 Tailwind CSS, https://tailwindcss.com
 Shadcn UI, https://ui.shadcn.com
-JSON Formatter, https://jsonformatter.org
-RegExr, https://regexr.com
 前端浏览器api文档, https://developer.mozilla.org/zh-CN/docs/Web/API
 React生态UI框架排行榜, https://awesome-react.dev/#ui-libraries
 Vue生态UI组件推荐, https://next.awesome-vue.js.org/components-and-libraries/ui-components.html
