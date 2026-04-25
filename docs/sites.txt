@@ -9,9 +9,10 @@ HTML文本十进制转码, https://blog.52013120.xyz/tools/htmlenc
 github历程回顾, https://blog.52013120.xyz/tools/github-user-data
 Fastboot工具箱, https://blog.52013120.xyz/tools/fastboot
 Github加速, https://yishijie.gitlab.io/ziyuan/
+Github和Docker加速, https://hub.52013120.xyz/
 在线m3u8播放器, https://blog.52013120.xyz/zhibo
 VIP视频在线播放, https://blog.52013120.xyz/video
-虚拟地址生成器, https://blog.52013120.xyz/geolocation
+地址生成器, https://blog.52013120.xyz/geolocation
 
 ## 影音娱乐
 FongMi版tvbox下载（支持安卓竖屏）, https://github.com/FongMi/Release
@@ -26,6 +27,7 @@ gitlab, https://gitlab.com
 Stack Overflow, https://stackoverflow.com
 MDN Web Docs, https://developer.mozilla.org
 全球技术问答社区, https://stackoverflow.com
+TG频道大全排行榜, https://telemetr.io/ch/catalog/china
 
 ## AI网页
 ChatGPT, https://chatgpt.com/
@@ -53,16 +55,24 @@ Augment Code, https://www.augmentcode.com/
 谷歌antigravity, https://antigravity.google/
 
 ## AI技能合集
+最全技能大合集, https://skillsmp.com/zh
 Skills中文站, https://cc-ai.cn/skills-cn/frontend/index.html
 Agent-Skills-指南, https://github.com/libukai/awesome-agent-skills
 腾讯技能社区, https://skillhub.tencent.com/
+Skills开放标准文档, https://agentskills.io/home
+Vercel出品的Skills排行榜, https://skills.sh/
+MCP和技能大全, https://mcpmarket.com/zh
 
 ## 前端工具
 Tailwind CSS, https://tailwindcss.com
 Shadcn UI, https://ui.shadcn.com
 JSON Formatter, https://jsonformatter.org
 RegExr, https://regexr.com
-前端文档, https://developer.mozilla.org/zh-CN/docs/Web/API
+前端浏览器api文档, https://developer.mozilla.org/zh-CN/docs/Web/API
+React生态UI框架排行榜, https://awesome-react.dev/#ui-libraries
+Vue生态UI组件推荐, https://next.awesome-vue.js.org/components-and-libraries/ui-components.html
+Vue生态UI框架推荐, https://next.awesome-vue.js.org/components-and-libraries/frameworks.html
+
 
 ## 设计资源
 Figma, https://figma.com
@@ -100,6 +110,8 @@ Unsplash, https://unsplash.com
 临时匿名邮箱 (temp-mail), https://temp-mail.org/zh/
 临时Gmail邮箱, https://22.do/zh/fake-gmail-generator
 免费邮件api, https://resend.com
+美国免税州地址生成器, https://mockaddress.com/
+地址生成器, https://blog.52013120.xyz/geolocation
 
 ## 工具类
 前端在线工具, https://www.strerr.com/cn/tools.html
@@ -131,7 +143,11 @@ IP分流查询, https://ip.skk.moe
 ## 域名和礼品卡
 GoDaddy, https://www.godaddy.com/zh-sg/domains
 Spaceship, https://www.spaceship.com/zh/domains
+域名托管cloudflare, https://dash.cloudflare.com/
 海外礼品卡购买, https://shop.pockyt.io/pc/brands/all
+域名Whois查询, https://who.cx/
+域名Whois查询Godaddy, hhttps://www.godaddy.com/zh-sg/whois
+域名或者IP权威查询, https://lookup.icann.org/zh/lookup
 
 ## 素材类工具
 免费图标下载, https://igoutu.cn/
@@ -140,6 +156,7 @@ Spaceship, https://www.spaceship.com/zh/domains
 图片转圆角, https://ico.nyaasu.top/transp/index.html
 文件转换器, https://convertio.co/zh/
 网站图标代码, https://fontawesome.com/search
+二次元图片, https://tusi.cn/models/
 Youtube视频转文字, https://www.videotoblog.ai/
 爱给网图标, https://www.aigei.com/
 艺术渐变网页背景, https://www.color4bg.com/zh-hans/
