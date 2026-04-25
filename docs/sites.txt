@@ -76,7 +76,6 @@ Unsplash, https://unsplash.com
 ## 文件分享
 轻松传, https://easychuan.cn/
 阅后即焚文本分享, https://www.sixin.cc/
-文件分享 (Tmp.link), https://www.tmp.link/
 匿名文件快传 (File.io), https://www.file.io/
 匿名文件快传 (File.kiwi), https://file.kiwi/
 匿名文件快传 (Wormhole), https://wormhole.app/
@@ -107,8 +106,6 @@ Unsplash, https://unsplash.com
 在线vscode, https://vscode.dev/?vscode-lang=zh-cn
 在线绘图, https://excalidraw.com/
 各大软件快捷键查询, https://hotkeycheatsheet.com/zh
-直播工具, https://hao.yuenos.com/
-在线制作流光卡片, https://fireflycard.shushiai.com/
 在线临时记事本, https://cn.anotepad.com/
 互联网存档, https://archive.org/
 js代码混淆, https://obfuscator.io/
@@ -118,7 +115,6 @@ js代码混淆, https://obfuscator.io/
 软件搜索和替代推荐, https://alternativeto.net
 在线渲染GitHub (Githack), https://raw.githack.com
 在线渲染GitHub (Preview), https://htmlpreview.github.io
-Tinypng图片工具, https://tinypng.com
 
 ## 网络工具
 快速查看位置 (Cloudflare), https://www.cloudflare.com/cdn-cgi/trace
@@ -139,13 +135,14 @@ Spaceship, https://www.spaceship.com/zh/domains
 
 ## 素材类工具
 免费图标下载, https://igoutu.cn/
+图片转ico图标, https://convertio.co/zh/ico-converter/
+图片转换器多种格式, https://to.imagestool.com/zh-CN/image-converter
+图片转圆角, https://ico.nyaasu.top/transp/index.html
+文件转换器, https://convertio.co/zh/
 网站图标代码, https://fontawesome.com/search
 Youtube视频转文字, https://www.videotoblog.ai/
-图标LOGO, https://www.aigei.com/
+爱给网图标, https://www.aigei.com/
 艺术渐变网页背景, https://www.color4bg.com/zh-hans/
-icon图标转换, https://www.aconvert.com/cn/icon/png-to-ico/
-免费LOGO图标设计, https://ray.so/icon
-Youtube视频解析下载, https://ytshorts.savetube.me/
 全平台视频下载, https://www.datatool.vip/
 一键AI抠图, https://www.remove.bg/zh
 在线编辑图片, https://photokit.com/?lang=zh
