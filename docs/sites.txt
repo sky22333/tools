@@ -114,7 +114,12 @@ Unsplash, https://unsplash.com
 地址生成器, https://blog.52013120.xyz/geolocation
 
 ## 工具类
+tool开发工具箱, https://tool.ip138.com/
 前端在线工具, https://www.strerr.com/cn/tools.html
+html在线预览, https://www.ecjson.com/htmldebug/
+Base64编码/解码, https://tool.ip138.com/base64/
+Base64编码/解码, https://www.toolhelper.cn/EncodeDecode/Base64
+uuid在线生成, https://tool.ip138.com/uuid/
 在线vscode, https://vscode.dev/?vscode-lang=zh-cn
 在线绘图, https://excalidraw.com/
 各大软件快捷键查询, https://hotkeycheatsheet.com/zh
