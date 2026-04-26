@@ -57,7 +57,7 @@ Augment Code, https://www.augmentcode.com/
 ## AI技能合集
 最全技能大合集, https://skillsmp.com/zh
 阿里魔塔Skills中心, https://modelscope.cn/skills
-腾讯中文Skills中心, https://skillhub.cn/
+腾讯Skills市场, https://skillhub.cn/
 Agent-Skills-指南, https://github.com/libukai/awesome-agent-skills
 Skills开放标准文档, https://agentskills.io/home
 Vercel出品的Skills排行榜, https://skills.sh/
