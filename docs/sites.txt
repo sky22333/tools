@@ -56,7 +56,7 @@ Augment Code, https://www.augmentcode.com/
 
 ## AI技能合集
 最全技能大合集, https://skillsmp.com/zh
-Skills中文站, https://cc-ai.cn/skills-cn/frontend/index.html
+阿里魔塔Skills中心, https://modelscope.cn/skills
 Agent-Skills-指南, https://github.com/libukai/awesome-agent-skills
 腾讯技能社区, https://skillhub.tencent.com/
 Skills开放标准文档, https://agentskills.io/home
