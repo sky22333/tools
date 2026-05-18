@@ -13,7 +13,7 @@
             theme: {
                 extend: {
                     colors: { 
-                        background: '#F5F6F8',
+                        background: '#EFF4F8',
                         surface: '#FCFCFD',
                         border: '#E6E8EB',
                         textMain: '#2B303B',
@@ -35,6 +35,10 @@
     <style>
         body { 
             background-color: theme('colors.background'); 
+            background-image: 
+                linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+            background-size: 24px 24px;
             color: theme('colors.textMain'); 
             scroll-behavior: smooth; 
             -webkit-tap-highlight-color: transparent; 
