@@ -13,20 +13,20 @@
             theme: {
                 extend: {
                     colors: { 
-                        background: '#EFF4F8',
-                        surface: '#FCFCFD',
-                        border: '#E6E8EB',
-                        textMain: '#2B303B',
-                        textMuted: '#737A87',
-                        accent: '#527A9B',
-                        accentHover: '#3D617E'
+                        background: '#EFF4F8', 
+                        surface: '#FFFFFF', 
+                        border: '#E4E4E7', 
+                        textMain: '#18181B', 
+                        textMuted: '#71717A', 
+                        accent: '#27272A', 
+                        accentHover: '#09090B'
                     },
                     fontFamily: { 
                         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
                     },
                     boxShadow: {
-                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.03)',
-                        'hover': '0 10px 25px -5px rgba(82, 122, 155, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03)'
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.02)',
+                        'hover': '0 10px 25px -5px rgba(24, 24, 27, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.02)'
                     }
                 }
             }
@@ -71,11 +71,11 @@
             color: theme('colors.textMuted'); 
         }
         .nav-item:hover { 
-            background-color: #ECEEF2; 
+            background-color: #F4F4F5; 
             color: theme('colors.textMain'); 
         }
         .nav-item.active { 
-            background-color: #E8EEF3; 
+            background-color: #E4E4E7; 
             color: theme('colors.accent'); 
             font-weight: 600;
         }
@@ -137,7 +137,7 @@
         </main>
     </div>
 
-    <div id="drawerOverlay" class="fixed inset-0 bg-[#1A1D24]/20 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity"></div>
+    <div id="drawerOverlay" class="fixed inset-0 bg-[#18181B]/20 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity"></div>
     <div id="mobileDrawer" class="fixed bottom-0 left-0 right-0 bg-surface border-t border-border z-50 rounded-t-[32px] p-6 max-h-[85vh] flex flex-col lg:hidden shadow-2xl">
         <div class="w-12 h-1.5 bg-border rounded-full mx-auto mb-6 shrink-0"></div>
         <h3 class="font-bold text-xl mb-5 px-2 tracking-tight text-textMain">全部分类</h3>
@@ -146,7 +146,7 @@
 
     <script>
         let allData = [];
-        const AVATAR_COLORS = ['#6B8EAD', '#9285B8', '#5D93A4', '#66A593', '#C4976C', '#B87884', '#6D9E75'];
+        const AVATAR_COLORS = ['#18181B', '#27272A', '#3F3F46', '#52525B', '#71717A', '#2E2E33', '#444449'];
         const avatarCache = new Map();
 
         function getAvatar(name) {
