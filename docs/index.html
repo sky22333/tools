@@ -65,19 +65,15 @@
         .nav-item { 
             border-radius: 10px; 
             margin: 4px 12px; 
-            transition: all 0.2s ease; 
+            transition: background-color 0.2s ease, color 0.2s ease; 
             cursor: pointer; 
             font-weight: 500; 
             color: theme('colors.textMuted'); 
         }
-        .nav-item:hover { 
+        .nav-item:hover,
+        .nav-item.active { 
             background-color: #F4F4F5; 
             color: theme('colors.textMain'); 
-        }
-        .nav-item.active { 
-            background-color: #E4E4E7; 
-            color: theme('colors.accent'); 
-            font-weight: 600;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -146,6 +142,10 @@
 
     <script>
         let allData = [];
+        let timer;
+        let activeIndex = -1;
+        let scrollTicking = false;
+
         const AVATAR_COLORS = ['#18181B', '#27272A', '#3F3F46', '#52525B', '#71717A', '#2E2E33', '#444449'];
         const avatarCache = new Map();
 
@@ -181,6 +181,47 @@
             });
         }, { rootMargin: '300px' });
 
+        function setActiveNav(index) {
+            if (activeIndex === index) return;
+
+            const oldItem = document.querySelector(`.nav-item[data-index="${activeIndex}"]`);
+            const newItem = document.querySelector(`.nav-item[data-index="${index}"]`);
+
+            if (oldItem) oldItem.classList.remove('active');
+
+            if (newItem) {
+                newItem.classList.add('active');
+                newItem.scrollIntoView({ block: 'nearest' });
+            }
+
+            activeIndex = index;
+        }
+
+        function updateActiveNav() {
+            scrollTicking = false;
+
+            const sections = document.querySelectorAll('#siteGrid section');
+            if (!sections.length) return;
+
+            const line = window.scrollY + 130;
+            let current = 0;
+
+            for (let i = sections.length - 1; i >= 0; i--) {
+                if (sections[i].offsetTop <= line) {
+                    current = i;
+                    break;
+                }
+            }
+
+            setActiveNav(current);
+        }
+
+        function requestActiveNavUpdate() {
+            if (scrollTicking) return;
+            scrollTicking = true;
+            requestAnimationFrame(updateActiveNav);
+        }
+
         function render(data) {
             const grid = document.getElementById('siteGrid');
             const deskMenu = document.getElementById('categoryMenuList');
@@ -188,14 +229,19 @@
             const gridFrag = document.createDocumentFragment();
             const deskFrag = document.createDocumentFragment();
             const mobFrag = document.createDocumentFragment();
-            
+
+            activeIndex = -1;
             document.getElementById('category-count').innerText = data.length;
             
             data.forEach((cat, idx) => {
                 const dItem = document.createElement('div');
                 dItem.className = "nav-item px-4 py-2.5 text-sm truncate";
+                dItem.dataset.index = idx;
                 dItem.innerText = cat.name;
-                dItem.onclick = () => window.scrollTo({ top: document.getElementById(`section-${idx}`).offsetTop - 100 });
+                dItem.onclick = () => {
+                    setActiveNav(idx);
+                    window.scrollTo({ top: document.getElementById(`section-${idx}`).offsetTop - 100 });
+                };
                 deskFrag.appendChild(dItem);
                 
                 const mItem = document.createElement('div');
@@ -228,6 +274,7 @@
                     const a = document.createElement('a');
                     a.href = site.url;
                     a.target = "_blank";
+                    a.rel = "noopener noreferrer";
                     a.className = "nav-card p-3.5 flex items-center gap-3.5 group active:scale-[0.98] lg:active:scale-100";
                     a.innerHTML = `
                         <div class="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-background flex items-center justify-center border border-border group-hover:border-accent/20 transition-colors">
@@ -246,14 +293,22 @@
                 gridFrag.appendChild(section);
             });
             
-            grid.innerHTML = ''; deskMenu.innerHTML = ''; mobMenu.innerHTML = '';
-            grid.appendChild(gridFrag); deskMenu.appendChild(deskFrag); mobMenu.appendChild(mobFrag);
+            grid.innerHTML = '';
+            deskMenu.innerHTML = '';
+            mobMenu.innerHTML = '';
+
+            grid.appendChild(gridFrag);
+            deskMenu.appendChild(deskFrag);
+            mobMenu.appendChild(mobFrag);
+
             document.getElementById('emptyState').classList.toggle('hidden', data.length > 0);
+            requestActiveNavUpdate();
         }
 
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
         const mobileDrawer = document.getElementById('mobileDrawer');
         const drawerOverlay = document.getElementById('drawerOverlay');
+        const searchInput = document.getElementById('searchInput');
         
         function toggleDrawer(isOpen) {
             if (isOpen) {
@@ -301,8 +356,7 @@
             return categories;
         }
 
-        let timer;
-        document.getElementById('searchInput').addEventListener('input', (e) => {
+        searchInput.addEventListener('input', (e) => {
             clearTimeout(timer);
             timer = setTimeout(() => {
                 const q = e.target.value.toLowerCase();
@@ -312,7 +366,27 @@
                 render(filtered);
             }, 300);
         });
-        
+
+        document.addEventListener('keydown', (e) => {
+            const target = e.target;
+            const isTyping = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
+            if (e.key === '/' && !isTyping) {
+                e.preventDefault();
+                searchInput.focus();
+                return;
+            }
+
+            if (e.key === 'Escape' && searchInput.value) {
+                clearTimeout(timer);
+                searchInput.value = '';
+                searchInput.blur();
+                render(allData);
+            }
+        });
+
+        window.addEventListener('scroll', requestActiveNavUpdate, { passive: true });
+        window.addEventListener('resize', requestActiveNavUpdate);
         window.onload = init;
     </script>
 </body>
