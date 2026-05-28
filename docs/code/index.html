@@ -4,151 +4,261 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>在线代码编辑器</title>
-    <link rel="icon" href="./favicon.ico">
+    <link rel="icon" href="favicon.ico">
+
     <style>
-        html, body {
+        :root {
+            --bg: #282c34;
+            --panel: #21252b;
+            --panel-hover: #2c313a;
+            --border: #3e4451;
+            --text: #abb2bf;
+            --muted: #7f848e;
+            --accent: #61afef;
+            --scrollbar-thumb: #4b5363;
+            --scrollbar-thumb-hover: #5c6370;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
             margin: 0;
-            padding: 0;
-            height: 100%;
             width: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background-color: #1e1e1e;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
             font-family: Arial, sans-serif;
         }
-        #container {
-            width: 98%;
-            height: 95%;
-            border: 1px solid #333;
-            border-radius: 6px;
-            overflow: hidden;
+
+        body {
+            display: grid;
+            place-items: center;
         }
+
+        #container {
+            width: 98vw;
+            height: 95vh;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+        }
+
+        #editor {
+            width: 100%;
+            height: 100%;
+        }
+
         #floating-panel {
             position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background-color: rgba(30, 30, 30, 0.8);
-            border: 0px solid #333;
-            border-radius: 2px;
-            padding: 6px;
+            right: 14px;
+            bottom: 14px;
             z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: rgba(33, 37, 43, 0.92);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.32);
+            backdrop-filter: blur(10px);
         }
+
+        #floating-panel::before {
+            content: "语言";
+            color: var(--muted);
+            font-size: 12px;
+        }
+
         select {
-            background-color: #333;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            padding: 5px;
-            margin: 5px;
+            height: 30px;
+            min-width: 130px;
+            padding: 0 30px 0 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            outline: none;
+            color: var(--text);
+            background: var(--panel);
+            font-size: 13px;
+            cursor: pointer;
         }
-        /* 手机设备自适应 */
+
+        select:hover {
+            background: var(--panel-hover);
+        }
+
+        select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(97, 175, 239, 0.35);
+        }
+
+        .ace_scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: var(--scrollbar-thumb) var(--panel);
+        }
+
+        .ace_scrollbar::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        .ace_scrollbar::-webkit-scrollbar-track {
+            background: var(--panel);
+        }
+
+        .ace_scrollbar::-webkit-scrollbar-thumb {
+            border: 2px solid var(--panel);
+            border-radius: 999px;
+            background: var(--scrollbar-thumb);
+        }
+
+        .ace_scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
+        }
+
+        .ace_scrollbar::-webkit-scrollbar-corner {
+            background: var(--panel);
+        }
+
         @media (max-width: 768px) {
-            #container {
-                width: 100%;
-                height: 95%;
+            body {
+                display: block;
             }
-        }
-        .monaco-editor .line-numbers {
-            width: 30px !important;
+
+            #container {
+                width: 100vw;
+                height: 95vh;
+                border-right: 0;
+                border-left: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            #floating-panel {
+                right: 10px;
+                bottom: 10px;
+                padding: 6px;
+            }
+
+            #floating-panel::before {
+                display: none;
+            }
+
+            select {
+                min-width: 112px;
+            }
         }
     </style>
 </head>
+
 <body>
+    <div id="container">
+        <div id="editor"></div>
+    </div>
 
-<div id="container"></div>
+    <div id="floating-panel">
+        <select id="language-select">
+            <option value="sh">Shell</option>
+            <option value="javascript">JavaScript</option>
+            <option value="typescript">TypeScript</option>
+            <option value="json">JSON</option>
+            <option value="yaml">YAML</option>
+            <option value="html">HTML</option>
+            <option value="css">CSS</option>
+            <option value="python">Python</option>
+            <option value="php">PHP</option>
+            <option value="ruby">Ruby</option>
+            <option value="golang">Go</option>
+            <option value="rust">Rust</option>
+            <option value="kotlin">Kotlin</option>
+        </select>
+    </div>
 
-<div id="floating-panel">
-    <select id="language-select">
-        <option value="shell">Shell</option>
-        <option value="javascript">JavaScript</option>
-        <option value="python">Python</option>
-        <option value="java">Java</option>
-        <option value="cpp">C++</option>
-        <option value="typescript">TypeScript</option>
-        <option value="json">JSON</option>
-        <option value="yaml">YAML</option>
-        <option value="html">HTML</option>
-        <option value="css">CSS</option>
-        <option value="php">PHP</option>
-        <option value="ruby">Ruby</option>
-        <option value="go">Go</option>
-        <option value="rust">Rust</option>
-        <option value="swift">Swift</option>
-        <option value="kotlin">Kotlin</option>
-    </select>
-</div>
+    <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.43.4/src-min-noconflict/ace.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.43.4/src-min-noconflict/ext-searchbox.js"></script>
 
-<script src="https://cdn.jsdmirror.com/npm/monaco-editor@0.34.1/min/vs/loader.min.js"></script>
-<script>
-    require.config({
-        paths: { 
-            'vs': 'https://cdn.jsdmirror.com/npm/monaco-editor@0.34.1/min/vs'
-        },
-        'vs/nls': {
-            availableLanguages: {
-                '*': 'zh-cn'
-            }
-        }
-    });
+    <script>
+        (() => {
+            const ACE_CDN = "https://cdn.jsdelivr.net/npm/ace-builds@1.43.4/src-min-noconflict";
+            const CODE_KEY = "ace-editor-code";
+            const LANG_KEY = "ace-editor-language";
+            const DEFAULT_LANG = "sh";
+            const DEFAULT_CODE = `# blog.52013120.xyz
+echo "Hello, world!"
+`;
 
-    require(['vs/editor/editor.main'], function() {
-        var editor = monaco.editor.create(document.getElementById('container'), {
-            value: `# blog.52013120.xyz\necho "Hello, world!`,
-            language: 'shell',
-            theme: 'vs-dark',
-            automaticLayout: true,
-            lineNumbers: 'on',
-            lineNumbersMinChars: 3,
-            roundedSelection: false,
-            scrollBeyondLastLine: false,
-            readOnly: false,
-            fontSize: 16,
-            wordWrap: 'on',
-            minimap: { enabled: false },
-            matchBrackets: 'always',
-            find: {
-                addExtraSpaceOnTop: false,
-                highlightSearchTerms: true,
-            },
-        });
+            const select = document.getElementById("language-select");
 
-        document.getElementById('language-select').addEventListener('change', function() {
-            const selectedLanguage = this.value;
-            monaco.editor.setModelLanguage(editor.getModel(), selectedLanguage);
-        });
+            ace.config.set("basePath", ACE_CDN);
 
-        function openSearch() {
-            editor.focus();
-            setTimeout(function() {
-                editor.getAction('actions.find').run();
-            }, 100);
-        }
+            const editor = ace.edit("editor");
+            const lang = localStorage.getItem(LANG_KEY) || DEFAULT_LANG;
 
-        monaco.editor.defineTheme('vs-dark', {
-            base: 'vs-dark',
-            inherit: true,
-            rules: [
-                { token: '', foreground: 'D4D4D4', background: '1E1E1E' },
-                { token: 'string', foreground: 'CE9178' },
-                { token: 'keyword', foreground: '569CD6' },
-                { token: 'number', foreground: 'B5CEA8' },
-                { token: 'comment', foreground: '6A9955' },
-                { token: 'findMatchHighlight', background: '515C6A', foreground: 'D4D4D4' },
-            ],
-            colors: {
-                'editor.background': '#1E1E1E',
-                'editor.findMatchHighlightBackground': '#264F78',
-                'editor.lineHighlightBackground': '#2C2C2C',
-                'editorCursor.foreground': '#A7A7A7',
-                'editorLineNumber.foreground': '#858585',
-            }
-        });
+            select.value = lang;
 
-        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, openSearch);
-    });
-</script>
+            editor.setTheme("ace/theme/one_dark");
+            editor.session.setMode(`ace/mode/${lang}`);
+            editor.session.setUseWorker(false);
+            editor.setValue(localStorage.getItem(CODE_KEY) || DEFAULT_CODE, -1);
 
+            editor.setOptions({
+                fontSize: 16,
+                tabSize: 4,
+                useSoftTabs: true,
+                wrap: true,
+                showGutter: true,
+                showLineNumbers: true,
+                showPrintMargin: false,
+                showFoldWidgets: true,
+                displayIndentGuides: true,
+                highlightActiveLine: true,
+                highlightSelectedWord: true,
+                behavioursEnabled: true,
+                enableMultiselect: true,
+                copyWithEmptySelection: true,
+                cursorStyle: "smooth",
+                animatedScroll: true,
+                scrollPastEnd: 0.3
+            });
+
+            editor.renderer.setScrollMargin(8, 8, 8, 8);
+            editor.renderer.setVScrollBarAlwaysVisible(false);
+            editor.renderer.setHScrollBarAlwaysVisible(false);
+
+            const save = () => {
+                localStorage.setItem(CODE_KEY, editor.getValue());
+            };
+
+            let saveTimer = 0;
+
+            editor.session.on("change", () => {
+                clearTimeout(saveTimer);
+                saveTimer = setTimeout(save, 200);
+            });
+
+            select.addEventListener("change", () => {
+                const nextLang = select.value;
+
+                localStorage.setItem(LANG_KEY, nextLang);
+                editor.session.setMode(`ace/mode/${nextLang}`);
+                editor.focus();
+            });
+
+            window.addEventListener("keydown", (event) => {
+                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+                    event.preventDefault();
+                    save();
+                }
+            });
+
+            window.addEventListener("beforeunload", save);
+        })();
+    </script>
 </body>
 </html>
