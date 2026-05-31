@@ -7,7 +7,7 @@ ip配置器, https://blog.52013120.xyz/tools/ip
 md在线编辑器, https://blog.52013120.xyz/tools/md
 HTML文本十进制转码, https://blog.52013120.xyz/tools/htmlenc
 github历程回顾, https://blog.52013120.xyz/tools/github-user-data
-Fastboot工具箱, https://blog.52013120.xyz/tools/fastboot
+Fastboot和adb工具箱, https://blog.52013120.xyz/web-adb/
 Github加速, https://yishijie.gitlab.io/ziyuan/
 Github和Docker加速, https://hub.52013120.xyz/
 在线m3u8播放器, https://blog.52013120.xyz/zhibo
