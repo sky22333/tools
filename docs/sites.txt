@@ -6,12 +6,11 @@ TVBox配置生成器, https://blog.52013120.xyz/tools/tv
 ip配置器, https://blog.52013120.xyz/tools/ip
 md在线编辑器, https://blog.52013120.xyz/tools/md
 HTML文本十进制转码, https://blog.52013120.xyz/tools/htmlenc
-github历程回顾, https://blog.52013120.xyz/tools/github-user-data
+Github历程回顾, https://blog.52013120.xyz/tools/gh-data
 Fastboot和adb工具箱, https://blog.52013120.xyz/web-adb/
-Github加速, https://yishijie.gitlab.io/ziyuan/
 Github和Docker加速, https://hub.52013120.xyz/
 在线m3u8播放器, https://blog.52013120.xyz/zhibo
-VIP视频在线播放, https://blog.52013120.xyz/video
+我的Github收藏列表, https://blog.52013120.xyz/github-star-sync
 地址生成器, https://blog.52013120.xyz/geolocation
 
 ## 影音娱乐
@@ -24,6 +23,7 @@ GitHub, https://github.com
 gitea, https://gitea.com
 gitgay, https://git.gay
 gitlab, https://gitlab.com
+codeberg, https://codeberg.org
 Stack Overflow, https://stackoverflow.com
 MDN Web Docs, https://developer.mozilla.org
 全球技术问答社区, https://stackoverflow.com
