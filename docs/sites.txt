@@ -64,6 +64,7 @@ Vercel出品的Skills排行榜, https://skills.sh/
 MCP和技能大全, https://mcpmarket.com/zh
 
 ## 前端工具
+花生壳临时托管, https://drop.ficp.fun/
 CF临时静态托管, https://www.cloudflare.com/drop/
 tool开发工具箱, https://tool.ip138.com/
 前端在线工具, https://www.strerr.com/cn/tools.html
