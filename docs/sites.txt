@@ -175,7 +175,6 @@ Spaceship, https://www.spaceship.com/zh/domains
 域名托管cloudflare, https://dash.cloudflare.com/
 海外礼品卡购买, https://shop.pockyt.io/pc/brands/all
 域名Whois查询, https://who.cx/
-域名Whois查询Godaddy, hhttps://www.godaddy.com/zh-sg/whois
 域名或者IP权威查询, https://lookup.icann.org/zh/lookup
 
 ## 素材类工具
