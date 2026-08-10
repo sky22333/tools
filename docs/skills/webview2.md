@@ -313,7 +313,9 @@ app.on('window-all-closed', () => {
 
 ---
 
-## 10. 参考来源（在使用以上优化指南之前，需要参考下方最新文档，避免时效差异）
+## 10. 参考来源
+
+注意：在使用以上优化指南之前，需要参考下方最新文档，避免时效差异
 
 - WebView2 性能最佳实践（微软官方）：
   https://learn.microsoft.com/microsoft-edge/webview2/concepts/performance
