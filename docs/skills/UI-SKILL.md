@@ -142,4 +142,6 @@ description: 设计、实现或审查精致、扁平、面向普通用户的产�
 
 ## 参考与定位
 
+细节设计参考：https://github.com/pbakaus/impeccable
+
 参考 [Kill AI Slop](https://killaislop.com/) 及其 [项目仓库](https://github.com/yetone/kill-ai-slop) 对模板化视觉与文案的观察，并结合扁平布局、普通用户体验及组件复用要求重新组织。本文是独立的中文实用技能，不是原项目规则的完整翻译，也不将其审美偏好作为通用禁令。
