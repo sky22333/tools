@@ -7,7 +7,6 @@ ip配置器, https://blog.52013120.xyz/tools/ip
 md在线编辑器, https://blog.52013120.xyz/tools/md
 HTML文本十进制转码, https://blog.52013120.xyz/tools/htmlenc
 Github历程回顾, https://blog.52013120.xyz/tools/gh-data
-Fastboot和adb工具箱, https://blog.52013120.xyz/web-adb/
 Github和Docker加速, https://hub.52013120.xyz/
 在线m3u8播放器, https://blog.52013120.xyz/zhibo
 我的Github收藏列表, https://blog.52013120.xyz/github-star-sync
@@ -44,14 +43,13 @@ Manus, https://manus.im/app
 Lovable, https://lovable.dev/?via=typescript
 Stitch-移动app设计, https://stitch.withgoogle.com/
 
-## AI编辑器
+## AI-agent
+DeepSeek, https://www.deepseek.com/harness/
 字节Trae, https://www.trae.ai
 Cursor, https://cursor.com
 Claude Code, https://claude.ai/code
-阿里通义灵码, https://lingma.aliyun.com/
-Augment Code, https://www.augmentcode.com/
 亚马逊Kiro, https://kiro.dev/
-腾讯CodeBuddy, https://www.codebuddy.ai
+腾讯workbuddy, https://www.workbuddy.cn/
 谷歌antigravity, https://antigravity.google/
 
 ## AI技能合集
