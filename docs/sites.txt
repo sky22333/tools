@@ -51,6 +51,7 @@ Claude Code, https://claude.ai/code
 亚马逊Kiro, https://kiro.dev/
 腾讯workbuddy, https://www.workbuddy.cn/
 谷歌antigravity, https://antigravity.google/
+agent-qa 自然语言测试与持久记忆, https://vostride.com
 
 ## AI技能合集
 最全技能大合集, https://skillsmp.com/zh
